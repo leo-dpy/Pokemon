@@ -1,0 +1,213 @@
+html, body { 
+    width: 100% ;
+    height:100% ;
+    padding: 0 ;
+    margin: 0 ;
+}
+.conteneur {
+    display:flex;
+    justify-content: space-between;
+    width: 100% ;
+    height: 100% ;
+    padding: 15px;
+    background: linear-gradient(to bottom,blue,red);
+   
+}
+.droite {
+    display: flex;
+    flex-direction: column;
+    width: 46% ;
+    height: 90% ;
+    border-radius: 15px;
+    background:linear-gradient(to bottom,blue,red);
+}
+.gauche {
+    display: flex;
+    flex-direction: column;
+    width: 46% ;
+    height: 90% ;
+    border-radius: 15px;
+    background:linear-gradient(to bottom,blue,red);
+}
+.img-gauche {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+img {width: 200px; height: 200px;}
+
+.img-droite {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+.bar-progress-gauche {
+    background-color: green;
+    width: 80%;
+    display: flex;
+    align-self: center;
+    justify-content: center;
+    margin: 10px;
+    padding: 5px;
+    border-radius: 15px;
+}
+.bar-progress-droite {
+    background-color: green;
+    width: 80%;
+    display: flex;
+    align-self: center;
+    justify-content: center;
+    margin: 10px;
+    padding: 5px;
+    border-radius: 15px;
+}
+.attaque1-gauche {
+    background-color: white ;
+    width: 20%;
+    display: flex;
+    align-self:flex-start;
+    justify-content: center;
+    margin:5px;
+    padding: 10px;
+    border-radius: 15px;
+}
+.attaque2-gauche {
+    background-color: whitesmoke;
+    width: 20%;
+    display: flex;
+    align-self:flex-start;
+    justify-content: center;
+    margin: 5px;
+    padding: 10px;
+    border-radius: 15px;
+}
+.attaque3-gauche {
+    background-color: whitesmoke;
+    width: 20%;
+    display: flex;
+    align-self:flex-start;
+    justify-content: center;
+    margin: 5px;
+    padding: 10px;
+    border-radius: 15px;
+}
+.attaque4-gauche {
+    background-color: whitesmoke;
+    width: 20%;
+    display: flex;
+    align-self:flex-start;
+    justify-content: center;
+    margin: 5px;
+    padding: 10px;
+    border-radius: 15px;
+}
+.attaque-gauche {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+}
+.attaque1-gauche, .attaque2-gauche, .attaque3-gauche, .attaque4-gauche {
+    width: 45%;
+}
+.attaque1-droite {
+    background-color: whitesmoke;
+    width: 20%;
+    display: flex;
+    align-self:flex-start;
+    justify-content: center;
+    margin: 5px;
+    padding: 10px;
+    border-radius: 15px;
+}
+.attaque2-droite {
+    background-color: whitesmoke;
+    width: 20%;
+    display: flex;
+    align-self:flex-start;
+    justify-content: center;
+    margin: 5px;
+    padding: 10px;
+    border-radius: 15px;
+}
+.attaque3-droite {
+    background-color: whitesmoke;
+    width: 20%;
+    display: flex;
+    align-self:flex-start;
+    justify-content: center;
+    margin: 5px;
+    padding: 10px;
+    border-radius: 15px;
+}
+.attaque4-droite {
+    background-color: whitesmoke;
+    width: 20%;
+    display: flex;
+    align-self:flex-start;
+    justify-content: center;
+    margin: 5px;
+    padding: 10px;
+    border-radius: 15px;
+}
+.attaque-droite {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+}
+.attaque1-droite, .attaque2-droite, .attaque3-droite, .attaque4-droite {
+    width: 45%;
+}
+
+
+.img-droite-anim {
+    animation-duration: 0.5s;
+    animation-name: img-droite;
+    }
+
+.img-gauche-anim {
+    animation-duration: 0.5s;
+    animation-name: img-gauche;
+    }
+
+     @keyframes img-gauche {
+        from {
+        transform: translateX(10px);
+        }
+        to {
+        transform: translateX(-10px);
+        }
+        to {
+        transform: translateX(10px);
+         }
+        to {
+         transform: translateX(-10px);
+        }
+        to {
+        transform: translateX(10px);
+        }
+     }
+
+    @keyframes img-droite {
+            from {
+            transform: translateX(10px);
+            }
+            to {
+            transform: translateX(-10px);
+            }
+            to {
+            transform: translateX(10px);
+             }
+            to {
+             transform: translateX(-10px);
+            }
+            to {
+            transform: translateX(10px);
+            }
+
+
+
+        }
+            
