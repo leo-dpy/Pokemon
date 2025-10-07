@@ -68,6 +68,8 @@ const restartBtn = document.getElementById('restart-btn');
 
 const imgGauche = document.getElementById('img-gauche-pokemon');
 const imgDroite = document.getElementById('img-droite-pokemon');
+const nameGaucheSpan = document.getElementById('name-gauche');
+const nameDroiteSpan = document.getElementById('name-droite');
 const barGauche = document.getElementById('bar-gauche');
 const barDroite = document.getElementById('bar-droite');
 const hpLabelGauche = document.getElementById('hp-gauche-label');
@@ -308,6 +310,8 @@ pokemonOptions.forEach(opt=>{
 
     imgGauche.src = joueur.image;
     imgDroite.src = ennemi.image;
+  nameGaucheSpan.textContent = joueur.nom;
+  nameDroiteSpan.textContent = ennemi.nom;
 
     configAttaques('gauche', joueur);
     configAttaques('droite', ennemi);
@@ -363,6 +367,8 @@ function resetCombat(){
     if(div.parentElement.classList.contains('attaque-droite')) div.style.pointerEvents='none'; else div.style.pointerEvents='auto';
   });
   imgGauche.src=''; imgDroite.src='';
+  nameGaucheSpan.textContent='';
+  nameDroiteSpan.textContent='';
   imgGauche.classList.add('hidden'); imgDroite.classList.add('hidden');
   imgGauche.classList.remove('mega-flash','mega-aura');
   imgDroite.classList.remove('mega-flash','mega-aura');
@@ -399,6 +405,7 @@ function appliquerMega(pokemon, cote){
   pokemon.baseAtk = pokemon.mega.baseAtk;
   pokemon.baseDef = pokemon.mega.baseDef;
   imgEl.src = pokemon.mega.image;
+  if(isJoueur) nameGaucheSpan.textContent = pokemon.nom; else nameDroiteSpan.textContent = pokemon.nom;
   enqueue(`<strong>${pokemon.nom}</strong> méga-évolue ! Puissance accrue !`);
   // Boost léger de stages
   if(isJoueur){
