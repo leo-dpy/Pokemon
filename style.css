@@ -264,6 +264,9 @@ img {width: 200px; height: 200px;}
     @keyframes megaFlash {0%{filter:brightness(1) saturate(1);}30%{filter:brightness(3) saturate(2);}60%{filter:brightness(0.5) grayscale(0.4);}85%{filter:brightness(3.5) saturate(2.5);}100%{filter:brightness(1) saturate(1);} }
     .mega-aura::after {content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 25px 8px rgba(111,0,255,0.55),0 0 55px 18px rgba(0,170,255,0.35);animation:megaPulse 1.8s ease-in-out infinite;pointer-events:none;} 
     @keyframes megaPulse {0%,100%{transform:scale(0.85);opacity:.8;}50%{transform:scale(1.1);opacity:1;}}
+    .badge-mega {background:linear-gradient(135deg,#ff9d00,#ff3d00);color:#fff;font-weight:700;font-size:0.55rem;padding:3px 8px;border-radius:999px;letter-spacing:1px;box-shadow:0 0 0 1px rgba(255,255,255,.3),0 4px 10px -3px #000;animation:badgeGlow 1.5s ease-in-out infinite;}
+    @keyframes badgeGlow {0%,100%{filter:drop-shadow(0 0 4px #ff7300);}50%{filter:drop-shadow(0 0 10px #ff2e00);}}
+    .mega-log {background:linear-gradient(90deg,rgba(255,157,0,0.15),rgba(255,61,0,0.15));padding:4px 8px;border-left:4px solid #ff7300;border-radius:6px;margin:4px 0;}
 
     /* Badges stats */
     .badges-container {display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:4px;min-height:22px;}

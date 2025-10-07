@@ -460,4 +460,83 @@ finDePartie = function(message){
   megaBtn.classList.add('hidden');
 };
 
+// Ajout fonctions supplémentaires méga
+function setTypes(pokemon, types){ pokemon.types = types; }
+setTypes(POKEMONS.tortank, ['eau']);
+setTypes(POKEMONS.salameche, ['feu']);
+setTypes(POKEMONS.bulbizarre, ['plante']);
+setTypes(POKEMONS.leviator, ['eau']);
+setTypes(POKEMONS.dracaufeu, ['feu']);
+// Ajout types méga multiples
+POKEMONS.leviator.mega.types = ['eau','tenebres'];
+POKEMONS.dracaufeu.mega.types = ['feu','dragon'];
+
+// Attaques post-méga (remplacement)
+const MEGA_NEW_ATTACKS = {
+  'Méga-Léviator': [
+    { nom:'Mâchouille', puissance:40, type:'tenebres', precision:100, pp:15 },
+    { nom:'Cascade', puissance:40, type:'eau', precision:95, pp:15 },
+    { nom:'Séisme', puissance:45, type:'normal', precision:90, pp:10 },
+    { nom:'Danse Draco', puissance:0, type:'statut', effet:'atk+', precision: 100, pp: 20 }
+  ],
+  'Méga-Dracaufeu': [
+    { nom:'Déflagration', puissance:50, type:'feu', precision:85, pp:5 },
+    { nom:'Draco-Griffe', puissance:40, type:'dragon', precision:100, pp:15 },
+    { nom:'Lance-Flammes', puissance:35, type:'feu', precision:95, pp:15 },
+    { nom:'Vol', puissance:30, type:'normal', precision:95, pp:15 }
+  ]
+};
+
+// Mettre à jour calcul multiplicateur pour double type
+const originalCalculMult = calculMultiplicateur;
+calculMultiplicateur = function(typeAttaque, typeCible){
+  if(Array.isArray(typeCible)){
+    return typeCible.reduce((acc,t)=> acc * ((TYPE_TABLE[typeAttaque] && TYPE_TABLE[typeAttaque][t]) || 1),1);
+  }
+  return originalCalculMult(typeAttaque, typeCible);
+};
+
+// Injection du badge MEGA dans afterAction
+const oldAfterAction = afterAction;
+function afterAction(){
+  if(oldAfterAction) oldAfterAction();
+  // Afficher badge MEGA pour formes méga
+  if(joueur && joueur.nom.startsWith('Méga-')){
+    let cont = document.getElementById('badges-gauche');
+    if(!cont.querySelector('.badge-mega')){
+      const b=document.createElement('div');b.className='badge-mega';b.textContent='MEGA';cont.prepend(b);
+    }
+  }
+  if(ennemi && ennemi.nom.startsWith('Méga-')){
+    let cont = document.getElementById('badges-droite');
+    if(!cont.querySelector('.badge-mega')){
+      const b=document.createElement('div');b.className='badge-mega';b.textContent='MEGA';cont.prepend(b);
+    }
+  }
+}
+// Remplacer référence
+window.afterAction = afterAction;
+
+// Amélioration appliquerMega pour remplacement attaques + boosts progressifs
+const oldAppliquerMega = appliquerMega;
+appliquerMega = function(pokemon, cote){
+  oldAppliquerMega(pokemon, cote);
+  // Remplacer attaques si liste spéciale
+  if(MEGA_NEW_ATTACKS[pokemon.nom]){
+    pokemon.attaques = MEGA_NEW_ATTACKS[pokemon.nom];
+    configAttaques(cote==='gauche'?'gauche':'droite', pokemon);
+  }
+  // Boosts progressifs sur 3 pulses
+  let step = 0;
+  const interval = setInterval(()=>{
+    if(step===0){ if(cote==='gauche') stats.gauche.atkStage = Math.min(stats.gauche.atkStage+1,6); else stats.droite.atkStage = Math.min(stats.droite.atkStage+1,6); }
+    if(step===1){ if(cote==='gauche') stats.gauche.defStage = Math.min(stats.gauche.defStage+1,6); else stats.droite.defStage = Math.min(stats.droite.defStage+1,6); }
+    if(step===2){ if(cote==='gauche') stats.gauche.accStage = Math.min(stats.gauche.accStage+1,6); else stats.droite.accStage = Math.min(stats.droite.accStage+1,6); }
+    majBadges();
+    step++;
+    if(step>2) clearInterval(interval);
+  }, 600);
+  enqueue(`<div class='mega-log'><em>La puissance de ${pokemon.nom} monte en flèche !</em></div>`);
+};
+
 
