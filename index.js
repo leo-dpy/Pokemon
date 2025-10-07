@@ -343,14 +343,38 @@ attaquesDroite.forEach(d=> d.style.pointerEvents='none');
 
 enqueue('Sélectionne un Pokémon pour commencer.');
 
+// Snapshot initial pour reset complet
+const __BASE_POKEMONS = JSON.parse(JSON.stringify(POKEMONS));
+
+function resetCombat(){
+  // Restaurer POKEMONS
+  Object.keys(__BASE_POKEMONS).forEach(k=> POKEMONS[k] = JSON.parse(JSON.stringify(__BASE_POKEMONS[k])));
+  joueur=null; ennemi=null; hpGauche=100; hpDroite=100; combatTermine=false; megaUtilisee=false; processing=false; actionQueue=[];
+  stats = { gauche:{atkStage:0,defStage:0,accStage:0,evaStage:0}, droite:{atkStage:0,defStage:0,accStage:0,evaStage:0} };
+  ppState = { gauche:[], droite:[] };
+  // Effacer log et interface
+  logBox.innerHTML='';
+  document.getElementById('badges-gauche').innerHTML='';
+  document.getElementById('badges-droite').innerHTML='';
+  [...attaquesGauche,...attaquesDroite].forEach(div=>{
+    div.textContent='---';
+    ['degat','type','precision','effet','pp','pprestant'].forEach(a=> delete div.dataset[a]);
+    div.style.opacity='';
+    if(div.parentElement.classList.contains('attaque-droite')) div.style.pointerEvents='none'; else div.style.pointerEvents='auto';
+  });
+  imgGauche.src=''; imgDroite.src='';
+  imgGauche.classList.add('hidden'); imgDroite.classList.add('hidden');
+  imgGauche.classList.remove('mega-flash','mega-aura');
+  imgDroite.classList.remove('mega-flash','mega-aura');
+  megaBtn.classList.add('hidden'); restartBtn.classList.add('hidden');
+  updateHPBars();
+  enqueue('Sélectionne un Pokémon pour commencer.');
+  overlay.style.display='flex';
+}
+
 restartBtn.addEventListener('click', ()=> {
-  if(combatTermine){
-    enqueue('<em>Tu prends la fuite ! Le combat est terminé.</em>');
-  } else {
-    combatTermine = true;
-    enqueue('<em>Tu fuis le combat !</em>');
-  }
-  [...attaquesGauche,...attaquesDroite].forEach(b=> b.style.pointerEvents='none');
+  enqueue('<em>Tu t\'enfuis...</em>');
+  setTimeout(()=> resetCombat(), 400);
 });
 
 // (Redéfinitions leviator / dracaufeu supprimées – déjà intégrées dans l'objet POKEMONS initial)
@@ -439,6 +463,8 @@ const oldFin = finDePartie;
 finDePartie = function(message){
   oldFin(message);
   megaBtn.classList.add('hidden');
+  // Afficher bouton fuite même après fin (permet de revenir à la sélection)
+  restartBtn.classList.remove('hidden');
 };
 
 // Ajout fonctions supplémentaires méga
