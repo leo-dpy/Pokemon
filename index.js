@@ -429,7 +429,8 @@ restartBtn.addEventListener('click', ()=> location.reload());
 // --- Ajout des nouveaux Pokémon et méga formes ---
 POKEMONS.leviator = {
   nom: 'Léviator', type: 'eau', image: 'images/levi.jpg', baseAtk: 70, baseDef: 60,
-  mega: { nom: 'Méga-Léviator', type: 'eau', image: 'images/mega_leviator.jpg', baseAtk: 95, baseDef: 90 },
+  // Image méga remplacée par l'image de base faute de ressource dédiée
+  mega: { nom: 'Méga-Léviator', type: 'eau', image: 'images/levi.jpg', baseAtk: 95, baseDef: 90 },
   attaques: [
     { nom: 'Morsure', puissance: 30, type: 'tenebres', precision: 100, pp: 25 },
     { nom: 'Hydro-Queue', puissance: 35, type: 'eau', precision: 90, pp: 10 },
@@ -439,7 +440,8 @@ POKEMONS.leviator = {
 };
 POKEMONS.dracaufeu = {
   nom: 'Dracaufeu', type: 'feu', image: 'images/levi.jpg', baseAtk: 65, baseDef: 60,
-  mega: { nom: 'Méga-Dracaufeu', type: 'feu', image: 'images/mega_dracaufeu.jpg', baseAtk: 90, baseDef: 85 },
+  // Image méga remplacée par une image existante (ici levi.jpg) faute de ressource dédiée
+  mega: { nom: 'Méga-Dracaufeu', type: 'feu', image: 'images/levi.jpg', baseAtk: 90, baseDef: 85 },
   attaques: [
     { nom: 'Lance-Flammes', puissance: 35, type: 'feu', precision: 90, pp: 15 },
     { nom: 'Griffe', puissance: 30, type: 'normal', precision: 100, pp: 35 },
