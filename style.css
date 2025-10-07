@@ -249,9 +249,9 @@ img {width: 200px; height: 200px;}
     .efficace {color:#ffdd57;font-weight:700;}
     .super-efficace {color:#7CFC00;font-weight:700;}
     .pas-tres-efficace {color:#ff5f52;font-weight:700;}
-    /* Bouton restart */
-    .restart-btn {position:fixed;right:20px;bottom:20px;background:#ff4757;border:none;color:#fff;font-weight:600;padding:12px 20px;border-radius:10px;font-size:0.9rem;cursor:pointer;box-shadow:0 6px 16px -4px rgba(0,0,0,.6);transition:background .3s, transform .25s;z-index:1200;}
-    .restart-btn:hover {background:#ff6b81;transform:translateY(-3px);} 
+    /* Bouton fuite */
+    .restart-btn {position:fixed;right:20px;bottom:20px;background:#555;border:none;color:#fff;font-weight:600;padding:12px 20px;border-radius:10px;font-size:0.9rem;cursor:pointer;box-shadow:0 6px 16px -4px rgba(0,0,0,.6);transition:background .3s, transform .25s;z-index:1200;}
+    .restart-btn:hover {background:#777;transform:translateY(-3px);} 
     .restart-btn:active {transform:translateY(-1px);} 
     .restart-btn.hidden {display:none;}
     .mega-btn {position:fixed;left:20px;bottom:20px;background:#5f27cd;border:none;color:#fff;font-weight:600;padding:12px 18px;border-radius:10px;font-size:0.85rem;cursor:pointer;box-shadow:0 6px 16px -4px rgba(0,0,0,.6);transition:background .3s, transform .25s;z-index:1200;letter-spacing:1px;text-transform:uppercase;}
@@ -268,41 +268,7 @@ img {width: 200px; height: 200px;}
     @keyframes badgeGlow {0%,100%{filter:drop-shadow(0 0 4px #ff7300);}50%{filter:drop-shadow(0 0 10px #ff2e00);}}
     .mega-log {background:linear-gradient(90deg,rgba(255,157,0,0.15),rgba(255,61,0,0.15));padding:4px 8px;border-left:4px solid #ff7300;border-radius:6px;margin:4px 0;}
 
-    /* ================= Projectiles d'attaque ================= */
-    .proj {position:fixed; width:28px; height:28px; border-radius:50%; pointer-events:none; z-index:1500; opacity:0; transform:scale(.4); display:flex;align-items:center;justify-content:center; font-size:0.6rem; font-weight:700; color:#fff; text-shadow:0 1px 3px #000; box-shadow:0 0 8px 2px rgba(0,0,0,.4);}
-    .proj.proj-start {opacity:1; transition:transform .55s cubic-bezier(.55,.1,.25,1), opacity .2s;}
-    .proj.proj-end {opacity:0.9;}
-    .proj::after {content:""; position:absolute; inset:-4px; border-radius:inherit; filter:blur(6px); opacity:.6;}
-    .proj-feu {background:radial-gradient(circle at 30% 30%,#ffd19b,#ff7a00 60%,#842800); box-shadow:0 0 14px 4px rgba(255,90,0,.55);}
-    .proj-feu::after {background:radial-gradient(circle,#ff7a00,#ff3c00);} 
-    .proj-eau {background:radial-gradient(circle at 30% 30%,#ffffff,#5fb7ff 60%,#004a9b); box-shadow:0 0 14px 4px rgba(0,140,255,.55);} 
-    .proj-eau::after {background:radial-gradient(circle,#5fb7ff,#0066ff);} 
-    .proj-plante {background:radial-gradient(circle at 30% 30%,#e9ffd9,#3fa34d 60%,#0d4f1c); box-shadow:0 0 14px 4px rgba(63,163,77,.55);} 
-    .proj-plante::after {background:radial-gradient(circle,#5ed176,#1e7a32);} 
-    .proj-tenebres {background:radial-gradient(circle at 35% 35%,#ffffff,#303030 55%,#050505); box-shadow:0 0 16px 5px rgba(0,0,0,.8);} 
-    .proj-tenebres::after {background:radial-gradient(circle,#303030,#000);} 
-    .proj-normal {background:radial-gradient(circle at 35% 35%,#fafafa,#b4b4b4 55%,#4d4d4d); box-shadow:0 0 10px 3px rgba(140,140,140,.55);} 
-    .proj-combat {background:radial-gradient(circle at 35% 35%,#ffd6d6,#c0392b 55%,#5b120b); box-shadow:0 0 14px 4px rgba(192,57,43,.55);} 
-    .proj-dragon {background:radial-gradient(circle at 35% 35%,#ffe9ff,#8e44ad 55%,#3d0d4d); box-shadow:0 0 18px 6px rgba(142,68,173,.65);} 
-
-    /* Impact flash sur la cible */
-    .impact {position:fixed; pointer-events:none; width:70px; height:70px; border-radius:50%; background:radial-gradient(circle,#ffffff,#ffb347 40%,rgba(255,119,0,0) 70%); mix-blend-mode:screen; animation:impact .5s ease forwards; z-index:1495;}
-    @keyframes impact {0%{opacity:0; transform:scale(.2);}30%{opacity:.95; transform:scale(1);}70%{opacity:.55; transform:scale(1.2);}100%{opacity:0; transform:scale(1.4);} }
-    .impact-feu {background:radial-gradient(circle,#ffffff,#ff7a00 45%,rgba(255,70,0,0) 75%);} 
-    .impact-eau {background:radial-gradient(circle,#ffffff,#3ca9ff 45%,rgba(0,110,255,0) 75%);} 
-    .impact-plante {background:radial-gradient(circle,#ffffff,#3fa34d 45%,rgba(40,120,40,0) 75%);} 
-    .impact-tenebres {background:radial-gradient(circle,#ffffff,#303030 45%,rgba(0,0,0,0) 75%);} 
-    .impact-normal {background:radial-gradient(circle,#ffffff,#b4b4b4 45%,rgba(80,80,80,0) 75%);} 
-    .impact-combat {background:radial-gradient(circle,#ffffff,#c0392b 45%,rgba(170,30,20,0) 75%);} 
-    .impact-dragon {background:radial-gradient(circle,#ffffff,#8e44ad 45%,rgba(90,20,120,0) 75%);} 
-    .impact-crit {box-shadow:0 0 14px 6px rgba(255,235,120,.85);} 
-
-    /* Screen shake */
-    .screen-shake {animation:shakeScreen .35s ease;}
-    @keyframes shakeScreen {0%,100%{transform:translate(0,0);}20%{transform:translate(-6px,4px);}40%{transform:translate(7px,-5px);}60%{transform:translate(-4px,3px);}80%{transform:translate(5px,-4px);} }
-
-    /* Graines (Vampigraine multi projectiles) */
-    .proj-graines {width:20px; height:20px; background:radial-gradient(circle at 30% 30%,#e9ffd9,#5ed176 60%,#1e7a32); box-shadow:0 0 10px 3px rgba(63,163,77,.55);} 
+    /* (Projectiles / impacts supprimés) */
 
     /* Badges stats */
     .badges-container {display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:4px;min-height:22px;}

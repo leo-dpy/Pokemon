@@ -9,27 +9,9 @@ const POKEMONS = {
       { nom: 'Uppercut', puissance: 35, type: 'combat', precision: 90, pp: 10 }
     ]
   },
-  salameche: {
-    nom: 'Salamèche', type: 'feu', image: 'images/levi.jpg', baseAtk: 52, baseDef: 43,
-    attaques: [
-      { nom: 'Flammèche', puissance: 25, type: 'feu', precision: 100, pp: 25 },
-      { nom: 'Griffe', puissance: 30, type: 'normal', precision: 100, pp: 35 },
-      { nom: 'Rugissement', puissance: 0, type: 'statut', effet: 'atk-', precision: 100, pp: 40 },
-      { nom: 'Brouillard', puissance: 0, type: 'statut', effet: 'prec-', precision: 85, pp: 20 }
-    ]
-  },
-  bulbizarre: {
-    nom: 'Bulbizarre', type: 'plante', image: 'images/tortank.jpg', baseAtk: 49, baseDef: 49,
-    attaques: [
-      { nom: 'Fouet Lianes', puissance: 25, type: 'plante', precision: 100, pp: 25 },
-      { nom: 'Vampigraine', puissance: 15, type: 'plante', precision: 90, effet: 'leech', pp: 10 },
-      { nom: 'Rugissement', puissance: 0, type: 'statut', effet: 'atk-', precision: 100, pp: 40 },
-      { nom: 'Charge', puissance: 20, type: 'normal', precision: 100, pp: 35 }
-    ]
-  },
   leviator: {
     nom: 'Léviator', type: 'eau', image: 'images/levi.jpg', baseAtk: 70, baseDef: 60,
-    mega: { nom: 'Méga-Léviator', type: 'eau', image: 'images/mega_leviator.jpg', baseAtk: 95, baseDef: 90 },
+    mega: { nom: 'Méga-Léviator', type: 'eau', image: 'images/mega leviator.png', baseAtk: 95, baseDef: 90 },
     attaques: [
       { nom: 'Morsure', puissance: 30, type: 'tenebres', precision: 100, pp: 25 },
       { nom: 'Hydro-Queue', puissance: 35, type: 'eau', precision: 90, pp: 10 },
@@ -37,9 +19,29 @@ const POKEMONS = {
       { nom: 'Danse Draco', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
     ]
   },
-  dracaufeu: {
-    nom: 'Dracaufeu', type: 'feu', image: 'images/levi.jpg', baseAtk: 65, baseDef: 60,
-    mega: { nom: 'Méga-Dracaufeu', type: 'feu', image: 'images/mega_dracaufeu.jpg', baseAtk: 90, baseDef: 85 },
+  dragaufeu: {
+    nom: 'Dracaufeu', type: 'feu', image: 'images/dragaufeu.png', baseAtk: 65, baseDef: 60,
+    mega: { nom: 'Méga-Dracaufeu', type: 'feu', image: 'images/Mega dragaufeu.png', baseAtk: 90, baseDef: 85 },
+    attaques: [
+      { nom: 'Flammèche', puissance: 25, type: 'feu', precision: 100, pp: 25 },
+      { nom: 'Nitrocharge', puissance: 15, type: 'feu', precision: 90, effet: 'leech', pp: 10 },
+      { nom: 'Rugissement', puissance: 0, type: 'statut', effet: 'atk-', precision: 100, pp: 40 },
+      { nom: 'Charge', puissance: 20, type: 'normal', precision: 100, pp: 35 }
+    ]
+  },
+  pikachu: {
+    nom: 'Pikachu', type: 'electrique', image: 'images/pikachu.png', baseAtk: 55, baseDef: 40,
+    mega: { nom: 'Méga-Pikachu', type: 'electrique', image: 'images/mega_pikachu.jpg', baseAtk: 80, baseDef: 60 },
+    attaques: [
+      { nom: 'Morsure', puissance: 30, type: 'tenebres', precision: 100, pp: 25 },
+      { nom: 'Queue de fer', puissance: 35, type: 'fer', precision: 90, pp: 10 },
+      { nom: 'Ouragan', puissance: 25, type: 'normal', precision: 95, pp: 15 },
+      { nom: 'Danse Draco', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
+    ]
+  },
+  mewtwo: {
+    nom: 'Mewtwo', type: 'psychique', image: 'images/mewtwo.png', baseAtk: 70, baseDef: 60,
+    mega: { nom: 'Méga-Mewtwo', type: 'psychique', image: 'images/mega_mewtwo.png', baseAtk: 95, baseDef: 90 },
     attaques: [
       { nom: 'Lance-Flammes', puissance: 35, type: 'feu', precision: 90, pp: 15 },
       { nom: 'Griffe', puissance: 30, type: 'normal', precision: 100, pp: 35 },
@@ -88,20 +90,8 @@ let actionQueue = [];
 let processing = false;
 let combatTermine = false;
 
-// Audio minimaliste via Web Audio
-let audioCtx;
-function playTone(freq=440, duration=0.15, type='sine', volume=0.2){
-  try {
-    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = type; osc.frequency.value = freq;
-    gain.gain.value = volume;
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
-  } catch(e) { /* silence */ }
-}
+// Sons désactivés
+function playTone(){}
 
 const STAGE_MULT = [
   0.33, 0.4, 0.5, 0.66, 0.75, 0.85, 1,
@@ -119,17 +109,16 @@ function log(messageHTML){
   logBox.appendChild(p);
   logBox.scrollTop = logBox.scrollHeight;
 }
-function enqueue(messageHTML, sound){
-  actionQueue.push({messageHTML, sound});
+function enqueue(messageHTML){
+  actionQueue.push({messageHTML});
   processQueue();
 }
 function processQueue(){
   if(processing) return;
   if(actionQueue.length===0) return;
   processing = true;
-  const {messageHTML, sound} = actionQueue.shift();
+  const {messageHTML} = actionQueue.shift();
   log(messageHTML);
-  if(sound) sound();
   setTimeout(()=>{ processing=false; processQueue(); }, 550);
 }
 
@@ -210,7 +199,7 @@ function configAttaques(colonne, pokemon){
   });
 }
 function finDePartie(message){
-  enqueue('<strong>'+message+'</strong>', ()=> playTone(220,0.3,'sawtooth',0.25));
+  enqueue('<strong>'+message+'</strong>');
   [...attaquesGauche,...attaquesDroite].forEach(b=> b.style.pointerEvents='none');
   restartBtn.classList.remove('hidden');
   combatTermine = true;
@@ -232,7 +221,7 @@ function attaque(sourceColonne, elementAttaque){
   let ppRestant = parseInt(elementAttaque.dataset.pprestant || '0',10);
   if(puissance>=0 && elementAttaque.dataset.pp){
     if(ppRestant<=0){
-      enqueue(`<span class="type type-${type}">${type}</span>${attaquant.nom} n'a plus de PP pour ${elementAttaque.textContent}!`, ()=> playTone(120,0.15,'square'));
+  enqueue(`<span class="type type-${type}">${type}</span>${attaquant.nom} n'a plus de PP pour ${elementAttaque.textContent}!`);
       return;
     }
     ppRestant -= 1; elementAttaque.dataset.pprestant = ppRestant;
@@ -245,7 +234,7 @@ function attaque(sourceColonne, elementAttaque){
   const evaMult = stageToMult(stats[oppSide].evaStage);
   const precisionEffective = Math.min(100, Math.max(1, Math.round(precisionBase * accMult / evaMult)));
   if(Math.random()*100 > precisionEffective){
-    enqueue(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> utilise <em>${elementAttaque.textContent}</em> mais échoue ! (Précision ${precisionEffective}%)`, ()=> playTone(140,0.12,'square'));
+  enqueue(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> utilise <em>${elementAttaque.textContent}</em> mais échoue ! (Précision ${precisionEffective}%)`);
     return;
   }
 
@@ -254,7 +243,8 @@ function attaque(sourceColonne, elementAttaque){
   if(puissance > 0){
     const atkStat = attaquant.baseAtk * stageToMult(stats[side].atkStage);
     const defStat = defenseur.baseDef * stageToMult(stats[oppSide].defStage);
-    const base = (atkStat / defStat) * (puissance / 10);
+  // Augmentation dégâts: multiplier base par 1.8
+  const base = (atkStat / defStat) * (puissance / 10) * 1.8;
     const variance = 0.85 + Math.random()*0.15;
     critique = Math.random() < 0.0625; // 6.25%
     const critMult = critique ? 1.5 : 1;
@@ -280,17 +270,17 @@ function attaque(sourceColonne, elementAttaque){
       texteEffet = `${defenseur.nom} est enveloppé de fumée ! Esquive augmentée.`;
     }
     majBadges();
-    enqueue(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> lance <em>${elementAttaque.textContent}</em>. ${texteEffet}`, ()=> playTone(310,0.15,'triangle'));
+  enqueue(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> lance <em>${elementAttaque.textContent}</em>. ${texteEffet}`);
   } else {
     popupDegats(oppSide, degats, critique);
     let critTxt = critique ? ' <span class="super-efficace">Coup critique !</span>' : '';
-    enqueue(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> utilise <em>${elementAttaque.textContent}</em> inflige ${degats} dégâts. ${feedback}${critTxt}`, ()=> playTone(520,0.12,'sine'));
+  enqueue(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> utilise <em>${elementAttaque.textContent}</em> inflige ${degats} dégâts. ${feedback}${critTxt}`);
     if(elementAttaque.dataset.effet==='leech' && degats>0){
       const avant = side==='gauche'? hpGauche: hpDroite;
       const soin = Math.min(100 - avant, Math.max(1, Math.round(degats*0.5)));
       if(soin>0){
         if(side==='gauche') hpGauche += soin; else hpDroite += soin;
-        enqueue(`<em>${attaquant.nom} récupère ${soin} PV !</em>`, ()=> playTone(660,0.2,'triangle',0.15));
+  enqueue(`<em>${attaquant.nom} récupère ${soin} PV !</em>`);
         updateHPBars();
       }
     }
@@ -305,78 +295,7 @@ function attaque(sourceColonne, elementAttaque){
   }
 }
 
-function screenShake(){
-  document.body.classList.add('screen-shake');
-  setTimeout(()=> document.body.classList.remove('screen-shake'), 350);
-}
-
-function spawnProjectile(sourceColonne, type, critique, multiIndex, total){
-  const sourceImg = sourceColonne==='gauche'? imgGauche : imgDroite;
-  const targetImg = sourceColonne==='gauche'? imgDroite : imgGauche;
-  const sRect = sourceImg.getBoundingClientRect();
-  const tRect = targetImg.getBoundingClientRect();
-  const proj = document.createElement('div');
-  const clsMap = { feu:'proj-feu', eau:'proj-eau', plante:'proj-plante', tenebres:'proj-tenebres', normal:'proj-normal', combat:'proj-combat', dragon:'proj-dragon' };
-  const cls = (type==='plante' && total && total>1) ? 'proj-graines' : (clsMap[type] || 'proj-normal');
-  proj.className = `proj ${cls}`;
-  if(critique) proj.style.filter = 'brightness(1.4) saturate(1.4)';
-  const offsetYSource = (multiIndex!=null && total)? ( (multiIndex - (total-1)/2) * 10 ) : 0;
-  const offsetYTarget = (multiIndex!=null && total)? ( (multiIndex - (total-1)/2) * 6 ) : 0;
-  const startX = sourceColonne==='gauche'? (sRect.right) : (sRect.left - 28);
-  const startY = sRect.top + (sRect.height/2) - 14 + offsetYSource;
-  const endX = sourceColonne==='gauche'? (tRect.left + tRect.width/2 - 14) : (tRect.right - tRect.width/2 - 14);
-  const endY = tRect.top + (tRect.height/2) - 14 + offsetYTarget;
-  proj.style.left = startX + 'px';
-  proj.style.top = startY + 'px';
-  document.body.appendChild(proj);
-  requestAnimationFrame(()=>{
-    proj.classList.add('proj-start');
-    const dx = endX - startX;
-    const dy = endY - startY;
-    proj.style.transform = `translate(${dx}px, ${dy}px) scale(1)`;
-  });
-  const travelTime = 520 + (multiIndex? multiIndex*40:0);
-  setTimeout(()=>{
-    proj.classList.add('proj-end');
-    const impact = document.createElement('div');
-    let impactCls = 'impact impact-'+(type||'normal');
-    if(critique) impactCls += ' impact-crit';
-    impact.className = impactCls;
-    impact.style.left = (endX - 21) + 'px';
-    impact.style.top = (endY - 21) + 'px';
-    document.body.appendChild(impact);
-    setTimeout(()=> impact.remove(), 500);
-    setTimeout(()=> proj.remove(), 320);
-    screenShake();
-  }, travelTime);
-}
-
-// Intégration projectiles avec critique réel et multi Vampigraine
-const baseAttaqueProjectile = attaque;
-attaque = function(sourceColonne, elementAttaque){
-  const type = elementAttaque.dataset.type;
-  const puissance = parseInt(elementAttaque.dataset.degat||'0',10);
-  const isVampi = elementAttaque.textContent.toLowerCase().includes('vampi');
-  // Exposer temporairement variable critique en inspectant la prochaine séquence : on monkey patch enqueue pour capter message critique
-  let critFlag = false;
-  const originalEnqueue = enqueue;
-  enqueue = function(msg, snd){
-    if(msg.includes('Coup critique')) critFlag = true;
-    originalEnqueue(msg, snd);
-  };
-  baseAttaqueProjectile(sourceColonne, elementAttaque);
-  enqueue = originalEnqueue;
-  if(puissance>0){
-    if(isVampi){
-      const total = 3;
-      for(let i=0;i<total;i++){
-        setTimeout(()=> spawnProjectile(sourceColonne, type, critFlag, i, total), i*120);
-      }
-    } else {
-      spawnProjectile(sourceColonne, type, critFlag, null, null);
-    }
-  }
-};
+// Suppression système de projectiles et secousses
 
 
 // --- Sélection ---
@@ -398,7 +317,7 @@ pokemonOptions.forEach(opt=>{
     overlay.style.display = 'none';
     animeEntree(imgGauche);
     setTimeout(()=> animeEntree(imgDroite),400);
-    enqueue(`<strong>Combat :</strong> ${joueur.nom} VS ${ennemi.nom}`, ()=> playTone(600,0.25,'square',0.15));
+  enqueue(`<strong>Combat :</strong> ${joueur.nom} VS ${ennemi.nom}`);
     updateHPBars();
     majBadges();
   });
@@ -424,31 +343,17 @@ attaquesDroite.forEach(d=> d.style.pointerEvents='none');
 
 enqueue('Sélectionne un Pokémon pour commencer.');
 
-restartBtn.addEventListener('click', ()=> location.reload());
+restartBtn.addEventListener('click', ()=> {
+  if(combatTermine){
+    enqueue('<em>Tu prends la fuite ! Le combat est terminé.</em>');
+  } else {
+    combatTermine = true;
+    enqueue('<em>Tu fuis le combat !</em>');
+  }
+  [...attaquesGauche,...attaquesDroite].forEach(b=> b.style.pointerEvents='none');
+});
 
-// --- Ajout des nouveaux Pokémon et méga formes ---
-POKEMONS.leviator = {
-  nom: 'Léviator', type: 'eau', image: 'images/levi.jpg', baseAtk: 70, baseDef: 60,
-  // Image méga remplacée par l'image de base faute de ressource dédiée
-  mega: { nom: 'Méga-Léviator', type: 'eau', image: 'images/levi.jpg', baseAtk: 95, baseDef: 90 },
-  attaques: [
-    { nom: 'Morsure', puissance: 30, type: 'tenebres', precision: 100, pp: 25 },
-    { nom: 'Hydro-Queue', puissance: 35, type: 'eau', precision: 90, pp: 10 },
-    { nom: 'Ouragan', puissance: 25, type: 'normal', precision: 95, pp: 15 },
-    { nom: 'Danse Draco', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
-  ]
-};
-POKEMONS.dracaufeu = {
-  nom: 'Dracaufeu', type: 'feu', image: 'images/levi.jpg', baseAtk: 65, baseDef: 60,
-  // Image méga remplacée par une image existante (ici levi.jpg) faute de ressource dédiée
-  mega: { nom: 'Méga-Dracaufeu', type: 'feu', image: 'images/levi.jpg', baseAtk: 90, baseDef: 85 },
-  attaques: [
-    { nom: 'Lance-Flammes', puissance: 35, type: 'feu', precision: 90, pp: 15 },
-    { nom: 'Griffe', puissance: 30, type: 'normal', precision: 100, pp: 35 },
-    { nom: 'Rugissement', puissance: 0, type: 'statut', effet: 'atk-', precision: 100, pp: 40 },
-    { nom: 'Vol', puissance: 30, type: 'normal', precision: 95, pp: 15 }
-  ]
-};
+// (Redéfinitions leviator / dracaufeu supprimées – déjà intégrées dans l'objet POKEMONS initial)
 
 const megaBtn = document.getElementById('mega-btn');
 let megaDisponible = true;
@@ -470,7 +375,7 @@ function appliquerMega(pokemon, cote){
   pokemon.baseAtk = pokemon.mega.baseAtk;
   pokemon.baseDef = pokemon.mega.baseDef;
   imgEl.src = pokemon.mega.image;
-  enqueue(`<strong>${pokemon.nom}</strong> méga-évolue ! Puissance accrue !`, ()=> playTone(800,0.4,'square',0.25));
+  enqueue(`<strong>${pokemon.nom}</strong> méga-évolue ! Puissance accrue !`);
   // Boost léger de stages
   if(isJoueur){
     stats.gauche.atkStage = Math.min(stats.gauche.atkStage+1,6);
@@ -525,8 +430,8 @@ processQueue = function(){
 
 // Patch supplémentaire pour inclure effets atk+
 const originalEnqueue = enqueue;
-enqueue = function(messageHTML, sound){
-  originalEnqueue(messageHTML.replace('atk+', ''), sound);
+enqueue = function(messageHTML){
+  originalEnqueue(messageHTML.replace('atk+', ''));
 };
 
 // Mutation de la fonction finDePartie pour masquer bouton méga si fin
@@ -539,13 +444,13 @@ finDePartie = function(message){
 // Ajout fonctions supplémentaires méga
 function setTypes(pokemon, types){ pokemon.types = types; }
 setTypes(POKEMONS.tortank, ['eau']);
-setTypes(POKEMONS.salameche, ['feu']);
-setTypes(POKEMONS.bulbizarre, ['plante']);
 setTypes(POKEMONS.leviator, ['eau']);
-setTypes(POKEMONS.dracaufeu, ['feu']);
+setTypes(POKEMONS.dragaufeu, ['feu']);
+setTypes(POKEMONS.pikachu, ['electrique']);
+setTypes(POKEMONS.mewtwo, ['psychique']);
 // Ajout types méga multiples
 POKEMONS.leviator.mega.types = ['eau','tenebres'];
-POKEMONS.dracaufeu.mega.types = ['feu','dragon'];
+POKEMONS.dragaufeu.mega.types = ['feu','dragon'];
 
 // Attaques post-méga (remplacement)
 const MEGA_NEW_ATTACKS = {
