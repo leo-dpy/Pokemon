@@ -78,6 +78,8 @@ const hpLabelDroite = document.getElementById('hp-droite-label');
 const endOverlay = document.getElementById('end-overlay');
 const endMessage = document.getElementById('end-message');
 const returnMenuBtn = document.getElementById('return-menu-btn');
+// Bouton méga inline
+const megaBtn = document.getElementById('mega-panel-btn');
 
 const attaquesGauche = [...document.querySelectorAll('.attaque-gauche > div')];
 const attaquesDroite = [...document.querySelectorAll('.attaque-droite > div')];
@@ -400,7 +402,6 @@ returnMenuBtn && returnMenuBtn.addEventListener('click', ()=>{
 
 // (Redéfinitions leviator / dracaufeu supprimées – déjà intégrées dans l'objet POKEMONS initial)
 
-const megaBtn = document.getElementById('mega-btn');
 let megaDisponible = true;
 let megaUtilisee = false;
 
