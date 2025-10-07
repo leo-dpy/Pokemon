@@ -305,20 +305,27 @@ function attaque(sourceColonne, elementAttaque){
   }
 }
 
-function spawnProjectile(sourceColonne, type, critique){
+function screenShake(){
+  document.body.classList.add('screen-shake');
+  setTimeout(()=> document.body.classList.remove('screen-shake'), 350);
+}
+
+function spawnProjectile(sourceColonne, type, critique, multiIndex, total){
   const sourceImg = sourceColonne==='gauche'? imgGauche : imgDroite;
   const targetImg = sourceColonne==='gauche'? imgDroite : imgGauche;
   const sRect = sourceImg.getBoundingClientRect();
   const tRect = targetImg.getBoundingClientRect();
   const proj = document.createElement('div');
   const clsMap = { feu:'proj-feu', eau:'proj-eau', plante:'proj-plante', tenebres:'proj-tenebres', normal:'proj-normal', combat:'proj-combat', dragon:'proj-dragon' };
-  const cls = clsMap[type] || 'proj-normal';
+  const cls = (type==='plante' && total && total>1) ? 'proj-graines' : (clsMap[type] || 'proj-normal');
   proj.className = `proj ${cls}`;
-  if(critique) proj.style.filter = 'brightness(1.3) saturate(1.4)';
+  if(critique) proj.style.filter = 'brightness(1.4) saturate(1.4)';
+  const offsetYSource = (multiIndex!=null && total)? ( (multiIndex - (total-1)/2) * 10 ) : 0;
+  const offsetYTarget = (multiIndex!=null && total)? ( (multiIndex - (total-1)/2) * 6 ) : 0;
   const startX = sourceColonne==='gauche'? (sRect.right) : (sRect.left - 28);
-  const startY = sRect.top + (sRect.height/2) - 14;
+  const startY = sRect.top + (sRect.height/2) - 14 + offsetYSource;
   const endX = sourceColonne==='gauche'? (tRect.left + tRect.width/2 - 14) : (tRect.right - tRect.width/2 - 14);
-  const endY = tRect.top + (tRect.height/2) - 14;
+  const endY = tRect.top + (tRect.height/2) - 14 + offsetYTarget;
   proj.style.left = startX + 'px';
   proj.style.top = startY + 'px';
   document.body.appendChild(proj);
@@ -328,17 +335,49 @@ function spawnProjectile(sourceColonne, type, critique){
     const dy = endY - startY;
     proj.style.transform = `translate(${dx}px, ${dy}px) scale(1)`;
   });
+  const travelTime = 520 + (multiIndex? multiIndex*40:0);
   setTimeout(()=>{
     proj.classList.add('proj-end');
     const impact = document.createElement('div');
-    impact.className = 'impact';
+    let impactCls = 'impact impact-'+(type||'normal');
+    if(critique) impactCls += ' impact-crit';
+    impact.className = impactCls;
     impact.style.left = (endX - 21) + 'px';
     impact.style.top = (endY - 21) + 'px';
     document.body.appendChild(impact);
     setTimeout(()=> impact.remove(), 500);
     setTimeout(()=> proj.remove(), 320);
-  }, 520);
+    screenShake();
+  }, travelTime);
 }
+
+// Intégration projectiles avec critique réel et multi Vampigraine
+const baseAttaqueProjectile = attaque;
+attaque = function(sourceColonne, elementAttaque){
+  const type = elementAttaque.dataset.type;
+  const puissance = parseInt(elementAttaque.dataset.degat||'0',10);
+  const isVampi = elementAttaque.textContent.toLowerCase().includes('vampi');
+  // Exposer temporairement variable critique en inspectant la prochaine séquence : on monkey patch enqueue pour capter message critique
+  let critFlag = false;
+  const originalEnqueue = enqueue;
+  enqueue = function(msg, snd){
+    if(msg.includes('Coup critique')) critFlag = true;
+    originalEnqueue(msg, snd);
+  };
+  baseAttaqueProjectile(sourceColonne, elementAttaque);
+  enqueue = originalEnqueue;
+  if(puissance>0){
+    if(isVampi){
+      const total = 3;
+      for(let i=0;i<total;i++){
+        setTimeout(()=> spawnProjectile(sourceColonne, type, critFlag, i, total), i*120);
+      }
+    } else {
+      spawnProjectile(sourceColonne, type, critFlag, null, null);
+    }
+  }
+};
+
 
 // --- Sélection ---
 pokemonOptions.forEach(opt=>{
