@@ -2,6 +2,7 @@
 const POKEMONS = {
   tortank: {
     nom: 'Tortank', type: 'eau', image: 'images/tortank.jpg', baseAtk: 48, baseDef: 65,
+    mega: { nom: 'Méga-Tortank', type: 'eau', image: 'images/mega tortank.png', baseAtk: 70, baseDef: 90 },
     attaques: [
       { nom: 'Pistolet à O', puissance: 25, type: 'eau', precision: 100, pp: 30 },
       { nom: 'Cascade', puissance: 40, type: 'eau', precision: 95, pp: 15 },
@@ -10,7 +11,7 @@ const POKEMONS = {
     ]
   },
   leviator: {
-    nom: 'Léviator', type: 'eau', image: 'images/levi.jpg', baseAtk: 70, baseDef: 60,
+    nom: 'Léviator', type: 'eau', image: 'images/leviator.png', baseAtk: 70, baseDef: 60,
     mega: { nom: 'Méga-Léviator', type: 'eau', image: 'images/mega leviator.png', baseAtk: 95, baseDef: 90 },
     attaques: [
       { nom: 'Pistolet à O', puissance: 25, type: 'eau', precision: 100, pp: 30 },
@@ -31,7 +32,6 @@ const POKEMONS = {
   },
   pikachu: {
     nom: 'Pikachu', type: 'electrique', image: 'images/pikachu.png', baseAtk: 55, baseDef: 40,
-    mega: { nom: 'Méga-Pikachu', type: 'electrique', image: 'images/mega_pikachu.jpg', baseAtk: 80, baseDef: 60 },
     attaques: [
       { nom: 'Éclair', puissance: 25, type: 'electrique', precision: 100, pp: 30 },
       { nom: 'Étincelle', puissance: 30, type: 'electrique', precision: 100, pp: 20 },
@@ -41,7 +41,8 @@ const POKEMONS = {
   },
   mewtwo: {
     nom: 'Mewtwo', type: 'psychique', image: 'images/mewtwo.png', baseAtk: 70, baseDef: 60,
-    mega: { nom: 'Méga-Mewtwo', type: 'psychique', image: 'images/mega_mewtwo.png', baseAtk: 95, baseDef: 90 },
+    // Correction du chemin image méga (fichier réel: 'mega mewtwo.png')
+    mega: { nom: 'Méga-Mewtwo', type: 'psychique', image: 'images/mega mewtwo.png', baseAtk: 95, baseDef: 95 },
     attaques: [
       { nom: 'Choc Mental', puissance: 30, type: 'psychique', precision: 100, pp: 30 },
       { nom: 'Psyko', puissance: 50, type: 'psychique', precision: 85, pp: 10 },
@@ -72,6 +73,8 @@ const nameGaucheSpan = document.getElementById('name-gauche');
 const nameDroiteSpan = document.getElementById('name-droite');
 const barGauche = document.getElementById('bar-gauche');
 const barDroite = document.getElementById('bar-droite');
+const barGaucheGhost = document.getElementById('bar-gauche-ghost');
+const barDroiteGhost = document.getElementById('bar-droite-ghost');
 const hpLabelGauche = document.getElementById('hp-gauche-label');
 const hpLabelDroite = document.getElementById('hp-droite-label');
 // Overlay fin de combat
@@ -80,6 +83,7 @@ const endMessage = document.getElementById('end-message');
 const returnMenuBtn = document.getElementById('return-menu-btn');
 // Bouton méga inline
 const megaBtn = document.getElementById('mega-panel-btn');
+const menuBtn = document.getElementById('menu-btn');
 
 const attaquesGauche = [...document.querySelectorAll('.attaque-gauche > div')];
 const attaquesDroite = [...document.querySelectorAll('.attaque-droite > div')];
@@ -114,6 +118,9 @@ function stageToMult(stage){
 function log(messageHTML){
   const p = document.createElement('p');
   p.innerHTML = messageHTML;
+  // Ajouter animation si message K.O
+  const plain = p.textContent || '';
+  // Plus de détection spécifique K.O. (supprimé sur demande)
   logBox.appendChild(p);
   // Ne conserver que les 2 dernières lignes
   while(logBox.children.length > 2){
@@ -150,16 +157,33 @@ function libelleEfficacite(mult){
   if(mult === 0) return '<span class="pas-tres-efficace">Sans effet...</span>';
   return '<span class="efficace">Efficacit\u00e9 normale.</span>';
 }
-function updateHPBars(){
-  const fillG = barGauche;
-  const fillD = barDroite;
-  fillG.style.width = hpGauche+'%';
-  fillD.style.width = hpDroite+'%';
-  [fillG,fillD].forEach(f=>{
-    f.classList.remove('caution','danger');
-    const val = parseInt(f.style.width,10);
-    if(val <= 30) f.classList.add('danger'); else if(val <= 60) f.classList.add('caution');
-  });
+function updateHPBars(options={}){
+  const { healSide=null } = options;
+  const apply = (live, ghost, value, side)=>{
+    // Largeur live immédiate
+    live.style.width = value+'%';
+    // Ghost suit plus lentement uniquement si on perd des PV
+    const prev = parseInt(ghost.style.width||'100',10);
+    if(value < prev){
+      ghost.style.width = value+'%';
+    } else if(value > prev){
+      // Gain de PV: élargir ghost d'abord puis live (déjà fait) => re-synchroniser après petit délai
+      setTimeout(()=>{ ghost.style.width = value+'%'; }, 350);
+    }
+    // Classes d'état
+    [live,ghost].forEach(el=>{ el.classList.remove('caution','danger'); });
+    if(value <= 30){ live.classList.add('danger'); ghost.classList.add('danger'); }
+    else if(value <= 60){ live.classList.add('caution'); ghost.classList.add('caution'); }
+    // Stripes si haute vie
+    if(value > 60) live.classList.add('striped'); else live.classList.remove('striped');
+    // Effet de soin ponctuel
+    if(healSide === side){
+      live.classList.add('heal-glow');
+      setTimeout(()=> live.classList.remove('heal-glow'), 950);
+    }
+  };
+  apply(barGauche, barGaucheGhost, hpGauche, 'gauche');
+  apply(barDroite, barDroiteGhost, hpDroite, 'droite');
   hpLabelGauche.textContent = `PV: ${hpGauche} / 100`;
   hpLabelDroite.textContent = `PV: ${hpDroite} / 100`;
 }
@@ -247,16 +271,27 @@ function configAttaques(colonne, pokemon){
   });
 }
 function finDePartie(message){
-  enqueue('<strong>'+message+'</strong>');
+  // Ne plus afficher ni journaliser la phrase K.O., seulement proposer le retour
   [...attaquesGauche,...attaquesDroite].forEach(b=> b.style.pointerEvents='none');
   restartBtn.classList.remove('hidden');
   combatTermine = true;
-  let txt;
-  if(message.includes('Tu gagnes')) txt = 'Le Pokémon ennemi est K.O !';
-  else if(message.includes('Tu perds')) txt = 'Vous êtes K.O !';
-  else txt = message;
-  if(endMessage) endMessage.textContent = txt;
-  if(endOverlay) endOverlay.style.display='flex';
+  if(endMessage){
+    endMessage.style.display = 'block';
+    endMessage.classList.remove('win','lose');
+    if(message.includes('Tu gagnes')){
+      endMessage.textContent = 'LE POKÉMON ENNEMI EST K.O';
+      endMessage.classList.add('win');
+    } else if(message.includes('Tu perds')){
+      endMessage.textContent = 'VOTRE POKÉMON EST K.O';
+      endMessage.classList.add('lose');
+    } else {
+      endMessage.textContent = 'COMBAT TERMINÉ';
+    }
+  }
+  if(endOverlay){
+    endOverlay.style.display='flex';
+    endOverlay.classList.add('show');
+  }
 }
 
 function attaque(sourceColonne, elementAttaque){
@@ -362,7 +397,7 @@ function attaque(sourceColonne, elementAttaque){
       if(soin>0){
         if(side==='gauche') hpGauche += soin; else hpDroite += soin;
   enqueue(`<em>${attaquant.nom} récupère ${soin} PV !</em>`);
-        updateHPBars();
+        updateHPBars({healSide: side});
       }
     }
   }
@@ -372,7 +407,9 @@ function attaque(sourceColonne, elementAttaque){
   setTimeout(()=> imgCible.classList.remove(sourceColonne === 'gauche' ? 'img-gauche-anim':'img-droite-anim'),600);
 
   if(hpCible <= 0){
-    finDePartie(`${defenseur.nom} est K.O ! ${(attaquant === joueur)?'Tu gagnes !':'Tu perds...'}`);
+    const victoire = (attaquant === joueur);
+    // Appel direct sans ajouter de phrase de K.O.
+    finDePartie(victoire ? 'Tu gagnes !' : 'Tu perds...');
   }
   if(window.__debugBattle){ console.log('[DEBUG attaque end]', {hpGauche, hpDroite}); }
 }
@@ -404,6 +441,7 @@ pokemonOptions.forEach(opt=>{
   enqueue(`<strong>Combat :</strong> ${joueur.nom} VS ${ennemi.nom}`);
     updateHPBars();
     majBadges();
+    if(menuBtn) menuBtn.classList.remove('hidden');
   });
 });
 
@@ -466,6 +504,36 @@ restartBtn.addEventListener('click', ()=> {
   setTimeout(()=> resetCombat(), 400);
 });
 
+// Bouton menu en cours de combat (retour au choix sans recharger la page)
+if(menuBtn){
+  menuBtn.addEventListener('click', ()=>{
+    if(combatTermine){
+      resetCombat();
+      return;
+    }
+    // Annuler combat courant et revenir au menu
+    joueur = null; ennemi = null; combatTermine = false; megaUtilisee = false; processing=false; actionQueue=[];
+    // Nettoyage rapide interface (sans recréer toutes les structures)
+    logBox.innerHTML='';
+    [...attaquesGauche,...attaquesDroite].forEach(div=>{
+      div.textContent='---';
+      ['degat','type','precision','effet','pp','pprestant'].forEach(a=> delete div.dataset[a]);
+      div.style.opacity='';
+      if(div.parentElement.classList.contains('attaque-droite')) div.style.pointerEvents='none'; else div.style.pointerEvents='auto';
+    });
+    imgGauche.src=''; imgDroite.src='';
+    nameGaucheSpan.textContent=''; nameDroiteSpan.textContent='';
+    imgGauche.classList.add('hidden'); imgDroite.classList.add('hidden');
+    megaBtn.classList.add('hidden'); restartBtn.classList.add('hidden');
+    if(endOverlay) endOverlay.style.display='none';
+    updateHPBars();
+    enqueue('Sélectionne un Pokémon pour commencer.');
+    overlay.style.display='flex';
+    // Ré-afficher menu seulement après sélection, donc on le masque ici
+    menuBtn.classList.add('hidden');
+  });
+}
+
 returnMenuBtn && returnMenuBtn.addEventListener('click', ()=>{
   if(endOverlay) endOverlay.style.display='none';
   resetCombat();
@@ -480,12 +548,37 @@ function appliquerMega(pokemon, cote){
   if(!pokemon.mega) return;
   const isJoueur = cote==='gauche';
   const imgEl = isJoueur ? imgGauche : imgDroite;
-  // Animation
-  imgEl.classList.add('mega-flash');
+  // Animation enrichie : éclats + morph + aura
+  imgEl.classList.add('mega-transforming');
+  imgEl.classList.add('mega-morph');
+  // Génération d'éclats lumineux
+  const shardLayer = document.createElement('div');
+  shardLayer.className = 'mega-shards';
+  const host = imgEl.parentElement;
+  if(host){ host.style.position='relative'; host.appendChild(shardLayer); }
+  for(let i=0;i<16;i++){
+    const s = document.createElement('div');
+    s.className = 'mega-shard';
+    const angle = (Math.PI * 2 * (i/16));
+    const dist = 70 + Math.random()*55;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist;
+    s.style.setProperty('--dx', dx+'px');
+    s.style.setProperty('--dy', dy+'px');
+    s.style.left = '50%';
+    s.style.top = '50%';
+    s.style.transform = 'translate(-50%,-50%)';
+    s.style.animationDelay = (Math.random()*0.15)+'s';
+    shardLayer.appendChild(s);
+  }
   setTimeout(()=>{
-    imgEl.classList.remove('mega-flash');
+    if(shardLayer) shardLayer.remove();
+  }, 1200);
+  setTimeout(()=>{
+    imgEl.classList.remove('mega-morph');
     imgEl.classList.add('mega-aura');
-  },1200);
+    imgEl.classList.remove('mega-transforming');
+  },1100);
   // Mise à jour des stats et nom
   pokemon.nom = pokemon.mega.nom;
   pokemon.type = pokemon.mega.type;
@@ -563,6 +656,7 @@ setTypes(POKEMONS.mewtwo, ['psychique']);
 // Ajout types méga multiples
 POKEMONS.leviator.mega.types = ['eau','tenebres'];
 POKEMONS.dragaufeu.mega.types = ['feu','dragon'];
+if(POKEMONS.tortank.mega){ POKEMONS.tortank.mega.types = ['eau']; }
 
 // Attaques post-méga (remplacement)
 const MEGA_NEW_ATTACKS = {
@@ -577,6 +671,18 @@ const MEGA_NEW_ATTACKS = {
     { nom:'Draco-Griffe', puissance:40, type:'dragon', precision:100, pp:15 },
     { nom:'Lance-Flammes', puissance:35, type:'feu', precision:95, pp:15 },
     { nom:'Vol', puissance:30, type:'normal', precision:95, pp:15 }
+  ],
+  'Méga-Mewtwo': [
+    { nom:'Psyko', puissance:55, type:'psychique', precision:90, pp:10 },
+    { nom:'Choc Mental', puissance:35, type:'psychique', precision:100, pp:25 },
+    { nom:'Ball’Ombre', puissance:45, type:'normal', precision:95, pp:10 },
+    { nom:'Plénitude', puissance:0, type:'statut', effet:'atk+', precision:100, pp:15 }
+  ],
+  'Méga-Tortank': [
+    { nom:'Hydro-Barrage', puissance:55, type:'eau', precision:80, pp:5 },
+    { nom:'Vibraqua', puissance:40, type:'eau', precision:100, pp:15 },
+    { nom:'Aqua-Jet', puissance:30, type:'eau', precision:100, pp:20 },
+    { nom:'Carapace Renforcée', puissance:0, type:'statut', effet:'atk+', precision:100, pp:15 }
   ]
 };
 
@@ -615,6 +721,16 @@ appliquerMega = function(pokemon, cote){
   if(MEGA_NEW_ATTACKS[pokemon.nom]){
     pokemon.attaques = MEGA_NEW_ATTACKS[pokemon.nom];
     configAttaques(cote==='gauche'?'gauche':'droite', pokemon);
+  }
+  // Soins bonus lors de la méga-évolution
+  const side = cote==='gauche' ? 'gauche' : 'droite';
+  const healBase = 25; // quantité brute de soin
+  let avant = side==='gauche'? hpGauche : hpDroite;
+  let recup = Math.min(healBase, 100 - avant);
+  if(recup > 0){
+    if(side==='gauche') hpGauche += recup; else hpDroite += recup;
+    updateHPBars({ healSide: side });
+    enqueue(`<em>${pokemon.nom} regagne ${recup} PV grâce à son énergie méga !</em>`);
   }
   // Boosts progressifs sur 3 pulses
   let step = 0;

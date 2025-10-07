@@ -5,6 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pokemon Battle</title>
+  <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
+  <link rel="alternate icon" type="image/png" href="images/favicon.png">
+  <!-- Police supplémentaire pour les noms de Pokémon -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Bungee:wght@400&family=Press+Start+2P&family=Orbitron:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
   <!-- Overlay de sélection du Pokémon -->
@@ -20,7 +24,7 @@
         </div>
   <div class="pokemon-option" data-key="leviator">
           <div class="pokeball"></div>
-          <img src="images/levi.jpg" alt="Léviator">
+          <img src="images/leviator.png" alt="Léviator">
           <span>Léviator (Eau)</span>
         </div>
   <div class="pokemon-option" data-key="dragaufeu">
@@ -45,6 +49,7 @@
   <div class="battle-shell">
     <header class="top-bar">
       <h1 class="app-title">Pokémon Battle</h1>
+      <button id="menu-btn" class="menu-btn hidden" title="Retour au menu">Menu</button>
     </header>
     <div class="conteneur battle-grid">
       <div class="gauche panel">
@@ -52,7 +57,7 @@
           <span id="name-gauche" class="pokemon-name">&nbsp;</span>
           <div id="badges-gauche" class="badges-container"></div>
         </div>
-        <div class="sprite-box"><img id="img-gauche-pokemon" src="" alt="Pokemon Gauche" class="pokemon-img hidden"></div>
+  <div class="sprite-box"><img id="img-gauche-pokemon" src="" alt="Pokemon Gauche" class="pokemon-img hidden" onerror="if(!this.dataset.alttried){this.dataset.alttried='1';this.src=this.src.replace('.png','.jpg');}else{this.style.opacity=.3;}"></div>
         <div class="hp-wrapper">
           <div class="hp-bar">
             <div id="bar-gauche-ghost" class="hp-fill ghost" data-value="100"></div>
@@ -66,14 +71,17 @@
           <div class="attaque3-gauche" data-degat="0" data-type="statut">---</div>
           <div class="attaque4-gauche" data-degat="0" data-type="plante">---</div>
         </div>
-        <button id="mega-panel-btn" class="mega-inline-btn hidden" title="Méga-évoluer (une seule fois)">Méga-Évolution</button>
+        <button id="mega-panel-btn" class="mega-inline-btn hidden" title="Méga-évoluer (une seule fois)">
+          <span class="mega-icon" aria-hidden="true"></span>
+          <span class="mega-text">Méga-Évolution</span>
+        </button>
       </div>
       <div class="droite panel">
         <div class="panel-header">
           <span id="name-droite" class="pokemon-name">&nbsp;</span>
           <div id="badges-droite" class="badges-container"></div>
         </div>
-        <div class="sprite-box"><img id="img-droite-pokemon" src="" alt="Pokemon Droite" class="pokemon-img hidden"></div>
+  <div class="sprite-box"><img id="img-droite-pokemon" src="" alt="Pokemon Droite" class="pokemon-img hidden" onerror="if(!this.dataset.alttried){this.dataset.alttried='1';this.src=this.src.replace('.png','.jpg');}else{this.style.opacity=.3;}"></div>
         <div class="hp-wrapper">
           <div class="hp-bar">
             <div id="bar-droite-ghost" class="hp-fill ghost" data-value="100"></div>
