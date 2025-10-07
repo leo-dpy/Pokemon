@@ -3,10 +3,10 @@ const POKEMONS = {
     tortank: {
         nom: 'Tortank', type: 'eau', image: 'images/tortank.jpg',
         attaques: [
-            { nom: 'Pistolet à O', puissance: 25, type: 'eau' },
-            { nom: 'Morsure', puissance: 30, type: 'tenebres' },
-            { nom: 'Charge', puissance: 20, type: 'normal' },
-            { nom: 'Coude', puissance: 35, type: 'combat' }
+                { nom: "Pistolet à O", puissance: 25, type: 'eau' },
+                { nom: 'Morsure', puissance: 30, type: 'tenebres' },
+                { nom: 'Charge', puissance: 20, type: 'normal' },
+                { nom: "Uppercut", puissance: 35, type: 'combat' }
         ]
     },
     salameche: {
@@ -38,6 +38,8 @@ const imgGauche = document.getElementById('img-gauche-pokemon');
 const imgDroite = document.getElementById('img-droite-pokemon');
 const barGauche = document.getElementById('bar-gauche');
 const barDroite = document.getElementById('bar-droite');
+const hpLabelGauche = document.getElementById('hp-gauche-label');
+const hpLabelDroite = document.getElementById('hp-droite-label');
 
 const attaquesGauche = [...document.querySelectorAll('.attaque-gauche > div')];
 const attaquesDroite = [...document.querySelectorAll('.attaque-droite > div')];
@@ -106,6 +108,8 @@ function attaque(sourceColonne, elementAttaque){
         hpCible = Math.max(0, hpCible - degats);
         cibleBar.value = hpCible;
         if(sourceColonne === 'gauche') hpDroite = hpCible; else hpGauche = hpCible;
+            hpLabelGauche.textContent = `PV: ${hpGauche} / 100`;
+            hpLabelDroite.textContent = `PV: ${hpDroite} / 100`;
     }
 
     const feedback = libelleEfficacite(mult);
