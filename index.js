@@ -221,6 +221,8 @@ function finDePartie(message){
 
 function attaque(sourceColonne, elementAttaque){
   if(combatTermine) return;
+  const prevGauche = hpGauche;
+  const prevDroite = hpDroite;
   const puissance = parseInt(elementAttaque.dataset.degat,10);
   const type = elementAttaque.dataset.type;
   const precisionBase = parseInt(elementAttaque.dataset.precision || '100',10);
@@ -269,6 +271,16 @@ function attaque(sourceColonne, elementAttaque){
     hpCible = Math.max(0, hpCible - degats);
     if(sourceColonne === 'gauche') hpDroite = hpCible; else hpGauche = hpCible;
     updateHPBars();
+  }
+  // Garde-fou: empêcher l'attaquant de se blesser lui-même par erreur
+  if(sourceColonne==='gauche' && hpGauche < prevGauche && hpDroite===prevDroite){
+    // rollback
+    hpGauche = prevGauche; hpDroite = prevDroite; updateHPBars();
+    enqueue('<em>Correction automatique: auto-dégât ignoré.</em>');
+  }
+  if(sourceColonne==='droite' && hpDroite < prevDroite && hpGauche===prevGauche){
+    hpGauche = prevGauche; hpDroite = prevDroite; updateHPBars();
+    enqueue('<em>Correction automatique: auto-dégât ennemi ignoré.</em>');
   }
   let feedback = '';
   if(puissance>0) feedback = libelleEfficacite(mult);
@@ -487,7 +499,6 @@ finDePartie = function(message){
   oldFin(message);
   megaBtn.classList.add('hidden');
 };
-  if(endOverlay) endOverlay.style.display='none';
 
 // Ajout fonctions supplémentaires méga
 function setTypes(pokemon, types){ pokemon.types = types; }
