@@ -7,30 +7,52 @@
     <title>Pokemon Battle</title>
 </head>
 <body>
+  <!-- Overlay de sélection du Pokémon -->
+  <div id="selection-overlay" class="overlay">
+    <div class="selection-box">
+      <h1>Choisis ton Pokémon</h1>
+      <p class="subtitle">L'adversaire sera choisi automatiquement parmi les restants.</p>
+      <div class="pokemon-list">
+        <div class="pokemon-option" data-key="tortank">
+          <div class="pokeball"></div>
+          <img src="images/tortank.jpg" alt="Tortank">
+          <span>Tortank (Eau)</span>
+        </div>
+        <div class="pokemon-option" data-key="salameche">
+          <div class="pokeball"></div>
+          <img src="images/levi.jpg" alt="Salamèche">
+          <span>Salamèche (Feu)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="conteneur">
 
     <div class="gauche">
-        <div class="img-gauche"> <img src="images/tortank.jpg" alt="Voiture"></div>
+        <div class="img-gauche"> <img id="img-gauche-pokemon" src="images/tortank.jpg" alt="Pokemon Gauche" class="pokemon-img hidden"></div>
         <progress id="bar-gauche" value="100" max="100" class="bar-progress-gauche"></progress>
         <div class="attaque-gauche">
-        <div class="attaque1-gauche" data-degat="25" > Vine Whip </div>
-        <div class="attaque2-gauche" data-degat="50" > Tackle </div>
-        <div class="attaque3-gauche" data-degat="10" > Growl </div>
-        <div class="attaque4-gauche"  data-degat="12" > Leech Seed </div>
+        <div class="attaque1-gauche" data-degat="25" data-type="plante">Fouet Lianes</div>
+        <div class="attaque2-gauche" data-degat="40" data-type="normal">Charge</div>
+        <div class="attaque3-gauche" data-degat="0" data-type="statut">Rugissement</div>
+        <div class="attaque4-gauche"  data-degat="15" data-type="plante">Vampigraine</div>
     </div>
     </div>
 
     <div class="droite">
-        <div class="img-droite"> <img src="images/levi.jpg" alt="Voiture"></div>
+        <div class="img-droite"> <img id="img-droite-pokemon" src="images/levi.jpg" alt="Pokemon Droite" class="pokemon-img hidden"></div>
         <progress id="bar-droite" value="100" max="100" class="bar-progress-droite"></progress>
         <div class="attaque-droite">
-            <div class="attaque1-droite" data-degat="20" > Ember </div>
-            <div class="attaque2-droite" data-degat="15"> Scratch </div>
-            <div class="attaque3-droite"  data-degat="30" > Growl </div>
-            <div class="attaque4-droite" data-degat="40" > Smokescreen </div>
+            <div class="attaque1-droite" data-degat="25" data-type="feu">Flammèche</div>
+            <div class="attaque2-droite" data-degat="30" data-type="normal">Griffe</div>
+            <div class="attaque3-droite"  data-degat="0" data-type="statut">Rugissement</div>
+            <div class="attaque4-droite" data-degat="0" data-type="statut">Brouillard</div>
         </div>
     </div>
   </div>
+
+  <div id="battle-log" class="battle-log"></div>
 
   <script src="index.js"></script>
 
