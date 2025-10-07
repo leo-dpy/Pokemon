@@ -26,6 +26,26 @@ const POKEMONS = {
       { nom: 'Rugissement', puissance: 0, type: 'statut', effet: 'atk-', precision: 100, pp: 40 },
       { nom: 'Charge', puissance: 20, type: 'normal', precision: 100, pp: 35 }
     ]
+  },
+  leviator: {
+    nom: 'Léviator', type: 'eau', image: 'images/levi.jpg', baseAtk: 70, baseDef: 60,
+    mega: { nom: 'Méga-Léviator', type: 'eau', image: 'images/mega_leviator.jpg', baseAtk: 95, baseDef: 90 },
+    attaques: [
+      { nom: 'Morsure', puissance: 30, type: 'tenebres', precision: 100, pp: 25 },
+      { nom: 'Hydro-Queue', puissance: 35, type: 'eau', precision: 90, pp: 10 },
+      { nom: 'Ouragan', puissance: 25, type: 'normal', precision: 95, pp: 15 },
+      { nom: 'Danse Draco', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
+    ]
+  },
+  dracaufeu: {
+    nom: 'Dracaufeu', type: 'feu', image: 'images/levi.jpg', baseAtk: 65, baseDef: 60,
+    mega: { nom: 'Méga-Dracaufeu', type: 'feu', image: 'images/mega_dracaufeu.jpg', baseAtk: 90, baseDef: 85 },
+    attaques: [
+      { nom: 'Lance-Flammes', puissance: 35, type: 'feu', precision: 90, pp: 15 },
+      { nom: 'Griffe', puissance: 30, type: 'normal', precision: 100, pp: 35 },
+      { nom: 'Rugissement', puissance: 0, type: 'statut', effet: 'atk-', precision: 100, pp: 40 },
+      { nom: 'Vol', puissance: 30, type: 'normal', precision: 95, pp: 15 }
+    ]
   }
 };
 
@@ -331,5 +351,113 @@ attaquesDroite.forEach(d=> d.style.pointerEvents='none');
 enqueue('Sélectionne un Pokémon pour commencer.');
 
 restartBtn.addEventListener('click', ()=> location.reload());
+
+// --- Ajout des nouveaux Pokémon et méga formes ---
+POKEMONS.leviator = {
+  nom: 'Léviator', type: 'eau', image: 'images/levi.jpg', baseAtk: 70, baseDef: 60,
+  mega: { nom: 'Méga-Léviator', type: 'eau', image: 'images/mega_leviator.jpg', baseAtk: 95, baseDef: 90 },
+  attaques: [
+    { nom: 'Morsure', puissance: 30, type: 'tenebres', precision: 100, pp: 25 },
+    { nom: 'Hydro-Queue', puissance: 35, type: 'eau', precision: 90, pp: 10 },
+    { nom: 'Ouragan', puissance: 25, type: 'normal', precision: 95, pp: 15 },
+    { nom: 'Danse Draco', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
+  ]
+};
+POKEMONS.dracaufeu = {
+  nom: 'Dracaufeu', type: 'feu', image: 'images/levi.jpg', baseAtk: 65, baseDef: 60,
+  mega: { nom: 'Méga-Dracaufeu', type: 'feu', image: 'images/mega_dracaufeu.jpg', baseAtk: 90, baseDef: 85 },
+  attaques: [
+    { nom: 'Lance-Flammes', puissance: 35, type: 'feu', precision: 90, pp: 15 },
+    { nom: 'Griffe', puissance: 30, type: 'normal', precision: 100, pp: 35 },
+    { nom: 'Rugissement', puissance: 0, type: 'statut', effet: 'atk-', precision: 100, pp: 40 },
+    { nom: 'Vol', puissance: 30, type: 'normal', precision: 95, pp: 15 }
+  ]
+};
+
+const megaBtn = document.getElementById('mega-btn');
+let megaDisponible = true;
+let megaUtilisee = false;
+
+function appliquerMega(pokemon, cote){
+  if(!pokemon.mega) return;
+  const isJoueur = cote==='gauche';
+  const imgEl = isJoueur ? imgGauche : imgDroite;
+  // Animation
+  imgEl.classList.add('mega-flash');
+  setTimeout(()=>{
+    imgEl.classList.remove('mega-flash');
+    imgEl.classList.add('mega-aura');
+  },1200);
+  // Mise à jour des stats et nom
+  pokemon.nom = pokemon.mega.nom;
+  pokemon.type = pokemon.mega.type;
+  pokemon.baseAtk = pokemon.mega.baseAtk;
+  pokemon.baseDef = pokemon.mega.baseDef;
+  imgEl.src = pokemon.mega.image;
+  enqueue(`<strong>${pokemon.nom}</strong> méga-évolue ! Puissance accrue !`, ()=> playTone(800,0.4,'square',0.25));
+  // Boost léger de stages
+  if(isJoueur){
+    stats.gauche.atkStage = Math.min(stats.gauche.atkStage+1,6);
+    stats.gauche.defStage = Math.min(stats.gauche.defStage+1,6);
+  } else {
+    stats.droite.atkStage = Math.min(stats.droite.atkStage+1,6);
+    stats.droite.defStage = Math.min(stats.droite.defStage+1,6);
+  }
+  majBadges();
+}
+
+megaBtn.addEventListener('click', ()=>{
+  if(!joueur || megaUtilisee || !joueur.mega) return;
+  megaUtilisee = true;
+  megaBtn.classList.add('hidden');
+  appliquerMega(joueur, 'gauche');
+});
+
+// Surcharge fonction configAttaques pour gérer nouveaux effets
+const oldConfigAttaques = configAttaques;
+configAttaques = function(colonne, pokemon){
+  oldConfigAttaques(colonne, pokemon);
+};
+
+// Etendre effets dans attaque
+const oldAttaque = attaque;
+attaque = function(sourceColonne, elementAttaque){
+  oldAttaque(sourceColonne, elementAttaque);
+};
+
+// Extension effets statut dans la fonction attaque existante (ré-édition légère)
+// On va monkey patcher la logique sans tout réécrire :
+// Ajout nouvel effet atk+ (Danse Draco)
+// Ajout déclenchement automatique méga ennemi à 50% PV si disponible
+
+// Observer le log queue pour appliquer patch dynamique après chaque action
+function afterAction(){
+  if(!megaUtilisee && joueur && joueur.mega){ megaBtn.classList.remove('hidden'); }
+  // Méga auto ennemi si PV <= 50 et pas encore méga et possède mega
+  if(ennemi && ennemi.mega && !ennemi.__mega && hpDroite <= 50){
+    ennemi.__mega = true;
+    appliquerMega(ennemi, 'droite');
+  }
+}
+
+// Hook processQueue pour afterAction
+const originalProcessQueue = processQueue;
+processQueue = function(){
+  originalProcessQueue();
+  if(!processing) afterAction();
+};
+
+// Patch supplémentaire pour inclure effets atk+
+const originalEnqueue = enqueue;
+enqueue = function(messageHTML, sound){
+  originalEnqueue(messageHTML.replace('atk+', ''), sound);
+};
+
+// Mutation de la fonction finDePartie pour masquer bouton méga si fin
+const oldFin = finDePartie;
+finDePartie = function(message){
+  oldFin(message);
+  megaBtn.classList.add('hidden');
+};
 
 
