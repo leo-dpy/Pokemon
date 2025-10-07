@@ -1,9 +1,14 @@
 html, body { width:100%; height:100%; padding:0; margin:0; }
 body { 
-    background: radial-gradient(circle at 30% 35%, #ffffff 0 8%, #ff1c1c 8% 30%, #ffffff 30% 33%, #222 33% 34%, #ffffff 34% 36%, #ff1c1c 36% 60%, #d40000 60% 100%);
+    --poke-red:#e41d27;--poke-dark:#1d1d1d;--poke-light:#fafafa;--poke-line:#1b1b1b;
+    background:
+        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.10), rgba(255,255,255,0) 60%),
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0 12px, rgba(0,0,0,0.05) 12px 24px),
+        radial-gradient(circle at 30% 35%, var(--poke-light) 0 7%, var(--poke-red) 7% 28%, var(--poke-light) 28% 31%, var(--poke-line) 31% 32%, var(--poke-light) 32% 34%, var(--poke-red) 34% 58%, #b80000 58% 100%);
+    background-size: 340px 340px, 220px 220px, 360px 360px;
     background-attachment: fixed;
-    background-size: 320px 320px;
     font-family: Arial, Helvetica, sans-serif;
+    color:#fff;
 }
 .hidden {opacity:0;}
 .visible {opacity:1;}

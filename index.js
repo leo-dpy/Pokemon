@@ -3,19 +3,19 @@ const POKEMONS = {
   tortank: {
     nom: 'Tortank', type: 'eau', image: 'images/tortank.jpg', baseAtk: 48, baseDef: 65,
     attaques: [
-      { nom: "Pistolet à O", puissance: 25, type: 'eau', precision: 100, pp: 25 },
-      { nom: 'Morsure', puissance: 30, type: 'tenebres', precision: 95, pp: 15 },
-      { nom: 'Charge', puissance: 20, type: 'normal', precision: 100, pp: 35 },
-      { nom: 'Uppercut', puissance: 35, type: 'combat', precision: 90, pp: 10 }
+      { nom: 'Pistolet à O', puissance: 25, type: 'eau', precision: 100, pp: 30 },
+      { nom: 'Cascade', puissance: 40, type: 'eau', precision: 95, pp: 15 },
+      { nom: 'Hydrocanon', puissance: 55, type: 'eau', precision: 75, pp: 5 },
+      { nom: 'Voile Aqua', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 15 }
     ]
   },
   leviator: {
     nom: 'Léviator', type: 'eau', image: 'images/levi.jpg', baseAtk: 70, baseDef: 60,
     mega: { nom: 'Méga-Léviator', type: 'eau', image: 'images/mega leviator.png', baseAtk: 95, baseDef: 90 },
     attaques: [
-      { nom: 'Morsure', puissance: 30, type: 'tenebres', precision: 100, pp: 25 },
-      { nom: 'Hydro-Queue', puissance: 35, type: 'eau', precision: 90, pp: 10 },
-      { nom: 'Ouragan', puissance: 25, type: 'normal', precision: 95, pp: 15 },
+      { nom: 'Pistolet à O', puissance: 25, type: 'eau', precision: 100, pp: 30 },
+      { nom: 'Hydro-Queue', puissance: 40, type: 'eau', precision: 90, pp: 10 },
+      { nom: 'Cascade', puissance: 45, type: 'eau', precision: 95, pp: 15 },
       { nom: 'Danse Draco', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
     ]
   },
@@ -23,30 +23,30 @@ const POKEMONS = {
     nom: 'Dracaufeu', type: 'feu', image: 'images/dragaufeu.png', baseAtk: 65, baseDef: 60,
     mega: { nom: 'Méga-Dracaufeu', type: 'feu', image: 'images/Mega dragaufeu.png', baseAtk: 90, baseDef: 85 },
     attaques: [
-      { nom: 'Flammèche', puissance: 25, type: 'feu', precision: 100, pp: 25 },
-      { nom: 'Nitrocharge', puissance: 15, type: 'feu', precision: 90, effet: 'leech', pp: 10 },
-      { nom: 'Rugissement', puissance: 0, type: 'statut', effet: 'atk-', precision: 100, pp: 40 },
-      { nom: 'Charge', puissance: 20, type: 'normal', precision: 100, pp: 35 }
+      { nom: 'Flammèche', puissance: 25, type: 'feu', precision: 100, pp: 30 },
+      { nom: 'Lance-Flammes', puissance: 40, type: 'feu', precision: 90, pp: 15 },
+      { nom: 'Nitrocharge', puissance: 20, type: 'feu', precision: 95, effet: 'leech', pp: 10 },
+      { nom: 'Danse Flamme', puissance: 30, type: 'feu', precision: 85, pp: 15 }
     ]
   },
   pikachu: {
     nom: 'Pikachu', type: 'electrique', image: 'images/pikachu.png', baseAtk: 55, baseDef: 40,
     mega: { nom: 'Méga-Pikachu', type: 'electrique', image: 'images/mega_pikachu.jpg', baseAtk: 80, baseDef: 60 },
     attaques: [
-      { nom: 'Morsure', puissance: 30, type: 'tenebres', precision: 100, pp: 25 },
-      { nom: 'Queue de fer', puissance: 35, type: 'fer', precision: 90, pp: 10 },
-      { nom: 'Ouragan', puissance: 25, type: 'normal', precision: 95, pp: 15 },
-      { nom: 'Danse Draco', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
+      { nom: 'Éclair', puissance: 25, type: 'electrique', precision: 100, pp: 30 },
+      { nom: 'Étincelle', puissance: 30, type: 'electrique', precision: 100, pp: 20 },
+      { nom: 'Tonnerre', puissance: 45, type: 'electrique', precision: 85, pp: 10 },
+      { nom: 'Charge Statik', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 25 }
     ]
   },
   mewtwo: {
     nom: 'Mewtwo', type: 'psychique', image: 'images/mewtwo.png', baseAtk: 70, baseDef: 60,
     mega: { nom: 'Méga-Mewtwo', type: 'psychique', image: 'images/mega_mewtwo.png', baseAtk: 95, baseDef: 90 },
     attaques: [
-      { nom: 'Lance-Flammes', puissance: 35, type: 'feu', precision: 90, pp: 15 },
-      { nom: 'Griffe', puissance: 30, type: 'normal', precision: 100, pp: 35 },
-      { nom: 'Rugissement', puissance: 0, type: 'statut', effet: 'atk-', precision: 100, pp: 40 },
-      { nom: 'Vol', puissance: 30, type: 'normal', precision: 95, pp: 15 }
+      { nom: 'Choc Mental', puissance: 30, type: 'psychique', precision: 100, pp: 30 },
+      { nom: 'Psyko', puissance: 50, type: 'psychique', precision: 85, pp: 10 },
+      { nom: 'Onde Psy', puissance: 35, type: 'psychique', precision: 95, pp: 15 },
+      { nom: 'Plénitude', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
     ]
   }
 };
@@ -481,9 +481,9 @@ POKEMONS.dragaufeu.mega.types = ['feu','dragon'];
 // Attaques post-méga (remplacement)
 const MEGA_NEW_ATTACKS = {
   'Méga-Léviator': [
-    { nom:'Mâchouille', puissance:40, type:'tenebres', precision:100, pp:15 },
-    { nom:'Cascade', puissance:40, type:'eau', precision:95, pp:15 },
-    { nom:'Séisme', puissance:45, type:'normal', precision:90, pp:10 },
+    { nom:'Cascade', puissance:45, type:'eau', precision:95, pp:15 },
+    { nom:'Hydrocanon', puissance:55, type:'eau', precision:75, pp:5 },
+    { nom:'Aqua Impact', puissance:50, type:'eau', precision:90, pp:10 },
     { nom:'Danse Draco', puissance:0, type:'statut', effet:'atk+', precision: 100, pp: 20 }
   ],
   'Méga-Dracaufeu': [
