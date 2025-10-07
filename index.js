@@ -1,21 +1,21 @@
 // --- Données Pokémon et Types ---
 const POKEMONS = {
     tortank: {
-        nom: 'Tortank', type: 'eau', image: 'images/tortank.jpg',
+        nom: 'Tortank', type: 'eau', image: 'images/tortank.jpg', baseAtk: 48, baseDef: 65,
         attaques: [
-                { nom: "Pistolet à O", puissance: 25, type: 'eau' },
-                { nom: 'Morsure', puissance: 30, type: 'tenebres' },
-                { nom: 'Charge', puissance: 20, type: 'normal' },
-                { nom: "Uppercut", puissance: 35, type: 'combat' }
+            { nom: "Pistolet à O", puissance: 25, type: 'eau', precision: 100 },
+            { nom: 'Morsure', puissance: 30, type: 'tenebres', precision: 95 },
+            { nom: 'Charge', puissance: 20, type: 'normal', precision: 100 },
+            { nom: "Uppercut", puissance: 35, type: 'combat', precision: 90 }
         ]
     },
     salameche: {
-        nom: 'Salamèche', type: 'feu', image: 'images/levi.jpg',
+        nom: 'Salamèche', type: 'feu', image: 'images/levi.jpg', baseAtk: 52, baseDef: 43,
         attaques: [
-            { nom: 'Flammèche', puissance: 25, type: 'feu' },
-            { nom: 'Griffe', puissance: 30, type: 'normal' },
-            { nom: 'Rugissement', puissance: 0, type: 'statut', effet: 'atk-' },
-            { nom: 'Brouillard', puissance: 0, type: 'statut', effet: 'prec-' }
+            { nom: 'Flammèche', puissance: 25, type: 'feu', precision: 100 },
+            { nom: 'Griffe', puissance: 30, type: 'normal', precision: 100 },
+            { nom: 'Rugissement', puissance: 0, type: 'statut', effet: 'atk-', precision: 100 },
+            { nom: 'Brouillard', puissance: 0, type: 'statut', effet: 'prec-', precision: 85 }
         ]
     }
 };
@@ -49,6 +49,20 @@ let joueur = null; // objet pokemon
 let ennemi = null;
 let hpGauche = 100;
 let hpDroite = 100;
+let stats = {
+    gauche: { atkStage: 0, defStage: 0, accStage: 0, evaStage: 0 },
+    droite: { atkStage: 0, defStage: 0, accStage: 0, evaStage: 0 }
+};
+
+const STAGE_MULT = [
+    0.33, 0.4, 0.5, 0.66, 0.75, 0.85, 1,
+    1.15, 1.3, 1.5, 1.7, 1.9, 2.1
+]; // index 6 = neutre
+
+function stageToMult(stage){
+    const idx = Math.min(Math.max(stage+6,0),12);
+    return STAGE_MULT[idx];
+}
 
 // --- Utilitaires ---
 function log(messageHTML){
@@ -69,6 +83,20 @@ function libelleEfficacite(mult){
     return '<span class="efficace">Efficacit\u00e9 normale.</span>';
 }
 
+function updateHPBars(){
+    const fillG = barGauche;
+    const fillD = barDroite;
+    fillG.style.width = hpGauche+'%';
+    fillD.style.width = hpDroite+'%';
+    [fillG,fillD].forEach(f=>{
+        f.classList.remove('caution','danger');
+        const val = parseInt(f.style.width,10);
+        if(val <= 30) f.classList.add('danger'); else if(val <= 60) f.classList.add('caution');
+    });
+    hpLabelGauche.textContent = `PV: ${hpGauche} / 100`;
+    hpLabelDroite.textContent = `PV: ${hpDroite} / 100`;
+}
+
 function animeEntree(imgEl){
     imgEl.classList.remove('hidden');
     imgEl.classList.add('enter-from-ball');
@@ -83,6 +111,8 @@ function configAttaques(colonne, pokemon){
         div.textContent = att.nom;
         div.dataset.degat = att.puissance;
         div.dataset.type = att.type;
+            if(att.precision) div.dataset.precision = att.precision;
+            if(att.effet) div.dataset.effet = att.effet;
     });
 }
 
@@ -95,25 +125,58 @@ function finDePartie(message){
 function attaque(sourceColonne, elementAttaque){
     const puissance = parseInt(elementAttaque.dataset.degat,10);
     const type = elementAttaque.dataset.type;
+    const precisionBase = parseInt(elementAttaque.dataset.precision || '100',10);
     const attaquant = sourceColonne === 'gauche' ? joueur : ennemi;
     const defenseur = sourceColonne === 'gauche' ? ennemi : joueur;
     const cibleBar = sourceColonne === 'gauche' ? barDroite : barGauche;
     let hpCible = sourceColonne === 'gauche' ? hpDroite : hpGauche;
     const cibleType = defenseur.type;
+    const side = sourceColonne === 'gauche' ? 'gauche':'droite';
+    const oppSide = sourceColonne === 'gauche' ? 'droite':'gauche';
+
+    // Gestion précision
+    const accMult = stageToMult(stats[side].accStage);
+    const evaMult = stageToMult(stats[oppSide].evaStage);
+    const precisionEffective = Math.min(100, Math.max(1, Math.round(precisionBase * accMult / evaMult)));
+    if(Math.random()*100 > precisionEffective){
+        log(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> utilise <em>${elementAttaque.textContent}</em> mais échoue ! (Précision ${precisionEffective}%)`);
+        return;
+    }
 
     const mult = calculMultiplicateur(type, cibleType);
-    const degats = Math.round(puissance * mult);
+    let degats = 0;
+    if(puissance > 0){
+        // Formule simplifiée dégâts = ( (Atk * multStage / DefStage) * puissance / 10 ) * efficacité + variance
+        const atkStat = attaquant.baseAtk * stageToMult(stats[side].atkStage);
+        const defStat = defenseur.baseDef * stageToMult(stats[oppSide].defStage);
+        const base = (atkStat / defStat) * (puissance / 10);
+        const variance = 0.85 + Math.random()*0.15; // 0.85 - 1.0
+        degats = Math.max(1, Math.round(base * mult * variance));
+    }
 
     if(puissance > 0){
         hpCible = Math.max(0, hpCible - degats);
-        cibleBar.value = hpCible;
         if(sourceColonne === 'gauche') hpDroite = hpCible; else hpGauche = hpCible;
-            hpLabelGauche.textContent = `PV: ${hpGauche} / 100`;
-            hpLabelDroite.textContent = `PV: ${hpDroite} / 100`;
+        updateHPBars();
     }
+    let feedback = '';
+    if(puissance>0) feedback = libelleEfficacite(mult);
 
-    const feedback = libelleEfficacite(mult);
-    log(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> utilise <em>${elementAttaque.textContent}</em> inflige ${degats} dégâts. ${feedback}`);
+    // Effets de statut
+    if(type==='statut' && elementAttaque.dataset.effet){
+        const effet = elementAttaque.dataset.effet;
+        let texteEffet='';
+        if(effet==='atk-'){
+            stats[oppSide].atkStage = Math.max(stats[oppSide].atkStage -1, -6);
+            texteEffet = `${defenseur.nom} voit son Attaque baisser !`;
+        } else if(effet==='prec-'){
+            stats[oppSide].evaStage = Math.min(stats[oppSide].evaStage +1, 6);
+            texteEffet = `${defenseur.nom} est enveloppé de fumée ! Esquive augmentée.`;
+        }
+        log(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> lance <em>${elementAttaque.textContent}</em>. ${texteEffet}`);
+    } else {
+        log(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> utilise <em>${elementAttaque.textContent}</em> inflige ${degats} dégâts. ${feedback}`);
+    }
 
     // Animation secousse
     const imgCible = sourceColonne === 'gauche' ? imgDroite.parentElement : imgGauche.parentElement;
@@ -145,6 +208,7 @@ pokemonOptions.forEach(opt=>{
         animeEntree(imgGauche);
         setTimeout(()=> animeEntree(imgDroite),400);
         log(`<strong>Combat :</strong> ${joueur.nom} VS ${ennemi.nom}`);
+            updateHPBars();
     });
 });
 
