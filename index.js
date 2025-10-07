@@ -115,6 +115,10 @@ function log(messageHTML){
   const p = document.createElement('p');
   p.innerHTML = messageHTML;
   logBox.appendChild(p);
+  // Ne conserver que les 2 dernières lignes
+  while(logBox.children.length > 2){
+    logBox.removeChild(logBox.firstChild);
+  }
   logBox.scrollTop = logBox.scrollHeight;
 }
 function enqueue(messageHTML){
@@ -127,7 +131,14 @@ function processQueue(){
   processing = true;
   const {messageHTML} = actionQueue.shift();
   log(messageHTML);
-  setTimeout(()=>{ processing=false; processQueue(); }, 550);
+  setTimeout(()=>{ 
+    processing=false; 
+    // Appeler afterAction après l'affichage d'un message
+    if(typeof afterAction === 'function') {
+      try { afterAction(); } catch(e){ console.warn('afterAction error', e); }
+    }
+    processQueue(); 
+  }, 550);
 }
 
 function calculMultiplicateur(typeAttaque, typeCible){
@@ -156,6 +167,29 @@ function animeEntree(imgEl){
   imgEl.classList.remove('hidden');
   imgEl.classList.add('enter-from-ball');
   setTimeout(()=> imgEl.classList.remove('enter-from-ball'),1200);
+}
+// Nouvelle animation de lancement de Pokéball
+function throwPokeball(imgEl){
+  // Nettoyer état précédent
+  imgEl.classList.add('hidden');
+  imgEl.classList.remove('spawn');
+  const parent = imgEl.parentElement;
+  if(!parent) return;
+  // Créer la pokéball animée
+  const ball = document.createElement('div');
+  ball.className = 'throwball';
+  parent.appendChild(ball);
+  // Ouvrir la ball puis afficher le Pokémon
+  setTimeout(()=>{
+    ball.classList.add('open');
+    ball.classList.add('flash');
+    imgEl.classList.remove('hidden');
+    imgEl.classList.add('spawn');
+  }, 650);
+  // Retirer la ball après animation
+  setTimeout(()=>{
+    ball.remove();
+  }, 1300);
 }
 function popupDegats(cote, degats, crit=false){
   if(degats<=0) return;
@@ -204,6 +238,12 @@ function configAttaques(colonne, pokemon){
     if(att.precision) div.dataset.precision = att.precision;
     if(att.effet) div.dataset.effet = att.effet;
     if(att.pp){ div.dataset.pp = att.pp; div.dataset.pprestant = att.pp; div.title = `PP ${att.pp}/${att.pp}`; }
+    // Marquer les attaques de statut pour aide visuelle / debug futur
+    if(att.puissance === 0){
+      div.classList.add('is-status');
+    } else {
+      div.classList.remove('is-status');
+    }
   });
 }
 function finDePartie(message){
@@ -237,6 +277,10 @@ function attaque(sourceColonne, elementAttaque){
   const side = sourceColonne === 'gauche' ? 'gauche':'droite';
   const oppSide = sourceColonne === 'gauche' ? 'droite':'gauche';
 
+  if(window.__debugBattle && (isNaN(puissance))){
+    console.warn('[DEBUG puissance NaN] dataset.degat=', elementAttaque.dataset.degat, 'element:', elementAttaque);
+  }
+
   // PP
   let ppRestant = parseInt(elementAttaque.dataset.pprestant || '0',10);
   if(puissance>=0 && elementAttaque.dataset.pp){
@@ -259,36 +303,31 @@ function attaque(sourceColonne, elementAttaque){
   }
 
   const mult = calculMultiplicateur(type, cibleType);
-  let degats = 0; let critique = false;
+  let degats = 0; let critique = false; let base = 0; let atkStat=0; let defStat=0; let variance=1; let critMult=1;
   if(puissance > 0){
-    const atkStat = attaquant.baseAtk * stageToMult(stats[side].atkStage);
-    const defStat = defenseur.baseDef * stageToMult(stats[oppSide].defStage);
-  // Augmentation dégâts: multiplier base par 1.8
-  const base = (atkStat / defStat) * (puissance / 10) * 1.8;
-    const variance = 0.85 + Math.random()*0.15;
+    atkStat = attaquant.baseAtk * stageToMult(stats[side].atkStage);
+    defStat = defenseur.baseDef * stageToMult(stats[oppSide].defStage);
+    // Augmentation dégâts: multiplier base par 1.8
+    base = (atkStat / defStat) * (puissance / 10) * 1.8;
+    variance = 0.85 + Math.random()*0.15;
     critique = Math.random() < 0.0625; // 6.25%
-    const critMult = critique ? 1.5 : 1;
+    critMult = critique ? 1.5 : 1;
     degats = Math.max(1, Math.round(base * mult * variance * critMult));
+  }
+  if(window.__debugBattle){
+    console.log('[DEBUG calc]', {puissance, type, precisionBase, mult, atkStat, defStat, base: Number(base.toFixed? base.toFixed(3): base), variance: variance.toFixed? variance.toFixed(3): variance, critMult, degatsAvantApplication: degats});
   }
 
   if(puissance > 0){
+    const avant = hpCible;
     hpCible = Math.max(0, hpCible - degats);
     if(sourceColonne === 'gauche') hpDroite = hpCible; else hpGauche = hpCible;
     updateHPBars();
-    if(window.__debugBattle){ console.log('[DEBUG dégâts]', {degats, cible:(sourceColonne==='gauche'?'droite':'gauche'), hpGauche, hpDroite}); }
+    if(window.__debugBattle){ console.log('[DEBUG dégâts]', {degats, hpAvant: avant, hpApres: hpCible, cible:(sourceColonne==='gauche'?'droite':'gauche'), hpGauche, hpDroite}); }
+  } else if(window.__debugBattle){
+    console.log('[DEBUG pas de dégâts - puissance <= 0]', {puissance, type});
   }
-  // Garde-fou: empêcher l'attaquant de se blesser lui-même par erreur
-  if(sourceColonne==='gauche' && hpGauche < prevGauche && hpDroite===prevDroite){
-    // rollback
-    hpGauche = prevGauche; hpDroite = prevDroite; updateHPBars();
-    enqueue('<em>Correction automatique: auto-dégât ignoré.</em>');
-    if(window.__debugBattle){ console.warn('[DEBUG auto-dégât détecté côté gauche – rollback]', {hpGauche, hpDroite}); }
-  }
-  if(sourceColonne==='droite' && hpDroite < prevDroite && hpGauche===prevGauche){
-    hpGauche = prevGauche; hpDroite = prevDroite; updateHPBars();
-    enqueue('<em>Correction automatique: auto-dégât ennemi ignoré.</em>');
-    if(window.__debugBattle){ console.warn('[DEBUG auto-dégât détecté côté droite – rollback]', {hpGauche, hpDroite}); }
-  }
+  // (Ancien rollback auto-dégâts supprimé: causait l'annulation des dégâts normaux)
   let feedback = '';
   if(puissance>0) feedback = libelleEfficacite(mult);
 
@@ -301,6 +340,15 @@ function attaque(sourceColonne, elementAttaque){
     } else if(effet==='prec-'){
       stats[oppSide].evaStage = Math.min(stats[oppSide].evaStage +1, 6);
       texteEffet = `${defenseur.nom} est enveloppé de fumée ! Esquive augmentée.`;
+    } else if(effet==='atk+'){
+      // Hausse d'attaque du lanceur
+      const avant = stats[side].atkStage;
+      if(avant >= 6){
+        texteEffet = `${attaquant.nom} ne peut pas augmenter davantage son Attaque.`;
+      } else {
+        stats[side].atkStage = Math.min(6, stats[side].atkStage + 1);
+        texteEffet = `L'Attaque de ${attaquant.nom} augmente !`;
+      }
     }
     majBadges();
   enqueue(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> lance <em>${elementAttaque.textContent}</em>. ${texteEffet}`);
@@ -351,8 +399,8 @@ pokemonOptions.forEach(opt=>{
     ppState.droite = ennemi.attaques.map(a=> a.pp || 0);
 
     overlay.style.display = 'none';
-    animeEntree(imgGauche);
-    setTimeout(()=> animeEntree(imgDroite),400);
+  throwPokeball(imgGauche);
+  setTimeout(()=> throwPokeball(imgDroite),450);
   enqueue(`<strong>Combat :</strong> ${joueur.nom} VS ${ennemi.nom}`);
     updateHPBars();
     majBadges();
@@ -368,8 +416,11 @@ attaquesGauche.forEach(div=>{
       setTimeout(()=>{
         const candidates = ennemi.attaques.filter(a=> a.puissance>0 || a.type==='statut');
         const choix = candidates[Math.floor(Math.random()*candidates.length)];
-        const divAtt = attaquesDroite[ennemi.attaques.findIndex(a=> a.nom===choix.nom)];
-        attaque('droite', divAtt);
+        const idx = ennemi.attaques.findIndex(a=> a.nom===choix.nom);
+        if(idx>=0){
+          const divAtt = attaquesDroite[idx];
+          if(divAtt) attaque('droite', divAtt);
+        }
       }, 650);
     }
   });
@@ -479,21 +530,15 @@ attaque = function(sourceColonne, elementAttaque){
 // Ajout déclenchement automatique méga ennemi à 50% PV si disponible
 
 // Observer le log queue pour appliquer patch dynamique après chaque action
-function afterAction(){
+function baseAfterAction(){
   if(!megaUtilisee && joueur && joueur.mega){ megaBtn.classList.remove('hidden'); }
-  // Méga auto ennemi si PV <= 50 et pas encore méga et possède mega
   if(ennemi && ennemi.mega && !ennemi.__mega && hpDroite <= 50){
     ennemi.__mega = true;
     appliquerMega(ennemi, 'droite');
   }
 }
 
-// Hook processQueue pour afterAction
-const originalProcessQueue = processQueue;
-processQueue = function(){
-  originalProcessQueue();
-  if(!processing) afterAction();
-};
+// (Hook processQueue supprimé : afterAction est maintenant appelé directement dans processQueue)
 
 // Patch supplémentaire pour inclure effets atk+
 const originalEnqueue = enqueue;
@@ -545,24 +590,21 @@ calculMultiplicateur = function(typeAttaque, typeCible){
 };
 
 // Injection du badge MEGA dans afterAction
-const oldAfterAction = afterAction;
 function afterAction(){
-  if(oldAfterAction) oldAfterAction();
-  // Afficher badge MEGA pour formes méga
-  if(joueur && joueur.nom.startsWith('Méga-')){
-    let cont = document.getElementById('badges-gauche');
-    if(!cont.querySelector('.badge-mega')){
+  baseAfterAction();
+  if(joueur && joueur.nom && joueur.nom.startsWith('Méga-')){
+    const cont = document.getElementById('badges-gauche');
+    if(cont && !cont.querySelector('.badge-mega')){
       const b=document.createElement('div');b.className='badge-mega';b.textContent='MEGA';cont.prepend(b);
     }
   }
-  if(ennemi && ennemi.nom.startsWith('Méga-')){
-    let cont = document.getElementById('badges-droite');
-    if(!cont.querySelector('.badge-mega')){
+  if(ennemi && ennemi.nom && ennemi.nom.startsWith('Méga-')){
+    const cont = document.getElementById('badges-droite');
+    if(cont && !cont.querySelector('.badge-mega')){
       const b=document.createElement('div');b.className='badge-mega';b.textContent='MEGA';cont.prepend(b);
     }
   }
 }
-// Remplacer référence
 window.afterAction = afterAction;
 
 // Amélioration appliquerMega pour remplacement attaques + boosts progressifs

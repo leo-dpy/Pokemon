@@ -54,8 +54,11 @@
         </div>
         <div class="sprite-box"><img id="img-gauche-pokemon" src="" alt="Pokemon Gauche" class="pokemon-img hidden"></div>
         <div class="hp-wrapper">
-          <div class="hp-bar"><div id="bar-gauche" class="hp-fill" data-value="100"></div></div>
-          <div class="hp-label" id="hp-gauche-label">PV: 100 / 100</div>
+          <div class="hp-bar">
+            <div id="bar-gauche-ghost" class="hp-fill ghost" data-value="100"></div>
+            <div id="bar-gauche" class="hp-fill live" data-value="100"></div>
+          </div>
+            <div class="hp-label" id="hp-gauche-label">PV: 100 / 100</div>
         </div>
         <div class="attaque-gauche attaques-grid">
           <div class="attaque1-gauche" data-degat="25" data-type="plante">---</div>
@@ -72,7 +75,10 @@
         </div>
         <div class="sprite-box"><img id="img-droite-pokemon" src="" alt="Pokemon Droite" class="pokemon-img hidden"></div>
         <div class="hp-wrapper">
-          <div class="hp-bar"><div id="bar-droite" class="hp-fill" data-value="100"></div></div>
+          <div class="hp-bar">
+            <div id="bar-droite-ghost" class="hp-fill ghost" data-value="100"></div>
+            <div id="bar-droite" class="hp-fill live" data-value="100"></div>
+          </div>
           <div class="hp-label" id="hp-droite-label">PV: 100 / 100</div>
         </div>
         <div class="attaque-droite attaques-grid">
@@ -83,9 +89,9 @@
         </div>
       </div>
     </div>
+    <!-- Journal de combat déplacé à l'intérieur pour ne plus chevaucher les cases -->
+    <div id="battle-log" class="battle-log"></div>
   </div>
-
-  <div id="battle-log" class="battle-log"></div>
   <!-- Ancien bouton méga global retiré -->
   <button id="restart-btn" class="restart-btn hidden">Fuite</button>
 

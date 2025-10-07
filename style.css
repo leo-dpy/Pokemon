@@ -18,19 +18,37 @@ body{--bg:#0d1117;--panel:#161b22;--panel-alt:#1e2530;--accent:#ffcb05;--accent-
 .sprite-box{display:flex;justify-content:center;align-items:center;min-height:170px;}
 .pokemon-img{width:170px;height:170px;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.55));opacity:0;transition:opacity .45s ease,transform .6s cubic-bezier(.19,1,.22,1);} 
 .pokemon-img:not(.hidden){opacity:1;}
+/* Effet lancement Pokéball */
+.sprite-box{position:relative;overflow:visible;}
+.throwball{position:absolute;width:64px;height:64px;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;background:linear-gradient(#e00000 0 48%,#e00000 50%,#ffffff 52%,#ffffff 100%);box-shadow:0 4px 10px rgba(0,0,0,.5),inset 0 0 0 3px #000,inset 0 0 0 5px #fff;z-index:6;display:flex;align-items:center;justify-content:center;animation:pokeballArc 1s ease-out forwards;}
+.throwball:before{content:"";position:absolute;inset:47% 0 0 0;height:6%;background:#000;}
+.throwball:after{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px #000,0 0 6px 2px rgba(255,255,255,.8);} 
+.throwball.open{animation:pokeballOpen .55s ease forwards;}
+.throwball.flash:after{background:#fff;box-shadow:0 0 0 4px #000,0 0 22px 10px #fff;}
+@keyframes pokeballArc{0%{transform:translate(-220px,180px) scale(.35) rotate(0deg);opacity:0;}10%{opacity:1;}55%{transform:translate(-40px,-40px) scale(.45) rotate(380deg);}70%{transform:translate(-10px,0) scale(.45) rotate(460deg);}78%{transform:translate(-10px,-12px) scale(.45) rotate(500deg);}100%{transform:translate(-10px,0) scale(.45) rotate(540deg);} }
+@keyframes pokeballOpen{0%{transform:translate(-10px,0) scale(.45) rotate(540deg);}40%{transform:translate(-10px,-8px) scale(.5) rotate(560deg);}70%{transform:translate(-10px,4px) scale(.42) rotate(560deg);}100%{transform:translate(-10px,0) scale(.42) rotate(560deg);opacity:0;}}
+@keyframes pokemonAppear{0%{opacity:0;transform:scale(.55) translateY(18px);}55%{opacity:1;transform:scale(1.08) translateY(-6px);}100%{opacity:1;transform:scale(1) translateY(0);} }
+.pokemon-img.spawn{animation:pokemonAppear .65s ease forwards;}
 img{max-width:100%;display:block;}
 .hp-wrapper{width:100%;}
-.hp-bar{position:relative;height:16px;background:#242c37;border-radius:10px;overflow:hidden;border:1px solid var(--border);}
-.hp-fill{position:absolute;inset:0;width:100%;background:linear-gradient(90deg,#35d07f,#1f9f55);transition:width .85s cubic-bezier(.22,.84,.3,1),background .4s;will-change:width;}
-.hp-fill.caution{background:linear-gradient(90deg,#e2c238,#b59116);} 
-.hp-fill.danger{background:linear-gradient(90deg,#e0524d,#b11f26);} 
+.hp-bar{position:relative;height:18px;background:#1c2430;border-radius:12px;overflow:hidden;border:1px solid #2c3946;box-shadow:inset 0 2px 4px -1px rgba(0,0,0,.6),0 2px 6px -2px rgba(0,0,0,.55);} 
+.hp-fill{position:absolute;inset:0;width:100%;--grad-ok:linear-gradient(90deg,#43e38d,#11b45a);--grad-mid:linear-gradient(90deg,#f7d14a,#c78b1d);--grad-low:linear-gradient(90deg,#ff5e55,#c71f25);background:var(--grad-ok);transition:width .7s cubic-bezier(.55,.12,.25,1),filter .5s,background .45s,opacity .4s;will-change:width;}
+.hp-fill.live{z-index:3;}
+.hp-fill.ghost{z-index:2;filter:brightness(.55) saturate(.7) blur(1px);transition:width 1.3s ease-in-out;opacity:.65;}
+.hp-fill.live.striped:before{content:"";position:absolute;inset:0;background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.25) 0 6px,transparent 6px 14px);mix-blend-mode:overlay;animation:hpStripes 18s linear infinite;opacity:.4;pointer-events:none;}
+@keyframes hpStripes{0%{background-position:0 0;}100%{background-position:600px 0;}}
+.hp-fill.caution{background:var(--grad-mid);} 
+.hp-fill.danger{background:var(--grad-low);animation:hpPulse 1.2s ease-in-out infinite;}
+@keyframes hpPulse{0%,100%{filter:brightness(1);}50%{filter:brightness(1.35);} }
+.hp-fill.heal-glow{box-shadow:0 0 14px 4px rgba(60,220,130,.55),0 0 34px -4px rgba(60,220,130,.45);animation:healBlink .9s ease forwards;}
+@keyframes healBlink{0%{filter:brightness(2);}70%{filter:brightness(1);}100%{filter:brightness(1);} }
 .hp-label{color:var(--text-dim);font-size:.7rem;margin-top:4px;letter-spacing:.5px;text-align:right;font-weight:500;}
 .attaques-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:4px;}
 .attaques-grid>div{background:var(--panel-alt);border:1px solid var(--border);padding:8px 10px;border-radius:10px;font-size:.7rem;font-weight:600;letter-spacing:.4px;cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:42px;line-height:1.1;position:relative;transition:background .25s,border-color .25s,transform .25s,color .25s;color:var(--text-dim);} 
 .attaques-grid>div:hover{background:#263241;color:var(--text);} 
 .attaques-grid>div:active{transform:scale(.95);} 
 .attaques-grid>div.disabled{opacity:.35;cursor:not-allowed;} 
-.battle-log{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);width:min(720px,92%);max-height:170px;overflow:auto;background:rgba(22,27,34,0.88);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;font-family:Consolas,monospace;font-size:.7rem;line-height:1.25;box-shadow:0 6px 18px -4px rgba(0,0,0,.55);} 
+.battle-log{position:relative;margin:24px auto 0;transform:none;left:auto;bottom:auto;width:100%;max-width:640px;max-height:60px;overflow:hidden;background:rgba(22,27,34,0.88);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;font-family:Consolas,monospace;font-size:.65rem;line-height:1.2;box-shadow:0 4px 14px -4px rgba(0,0,0,.55);} 
 .battle-log p{margin:2px 0;}
 .battle-log p span.type{display:inline-block;padding:2px 6px;border-radius:6px;font-size:.55rem;font-weight:700;letter-spacing:.5px;margin-right:6px;text-transform:uppercase;}
 .type-plante{background:#3fa34d;color:#06230c;} .type-feu{background:#ff6b3c;color:#3a0d00;} .type-eau{background:#3c8dff;color:#001a3a;} .type-normal{background:#b7b7b7;color:#242424;} .type-statut{background:#6d5dfc;color:#fff;} .type-electrique{background:#ffd84c;color:#3a2f00;} .type-psychique{background:#c45bff;color:#300046;} .type-dragon{background:#7b5bff;color:#0c003a;}
