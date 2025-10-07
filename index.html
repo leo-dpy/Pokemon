@@ -23,6 +23,11 @@
           <img src="images/levi.jpg" alt="Salamèche">
           <span>Salamèche (Feu)</span>
         </div>
+        <div class="pokemon-option" data-key="bulbizarre">
+          <div class="pokeball"></div>
+          <img src="images/tortank.jpg" alt="Bulbizarre">
+          <span>Bulbizarre (Plante)</span>
+        </div>
       </div>
     </div>
   </div>
@@ -31,6 +36,7 @@
 
     <div class="gauche">
         <div class="img-gauche"> <img id="img-gauche-pokemon" src="images/tortank.jpg" alt="Pokemon Gauche" class="pokemon-img hidden"></div>
+        <div id="badges-gauche" class="badges-container"></div>
         <div class="hp-wrapper">
           <div class="hp-bar">
             <div id="bar-gauche" class="hp-fill" data-value="100"></div>
@@ -47,6 +53,7 @@
 
     <div class="droite">
         <div class="img-droite"> <img id="img-droite-pokemon" src="images/levi.jpg" alt="Pokemon Droite" class="pokemon-img hidden"></div>
+        <div id="badges-droite" class="badges-container"></div>
         <div class="hp-wrapper">
           <div class="hp-bar">
             <div id="bar-droite" class="hp-fill" data-value="100"></div>
@@ -63,6 +70,7 @@
   </div>
 
   <div id="battle-log" class="battle-log"></div>
+  <button id="restart-btn" class="restart-btn hidden">Recommencer</button>
 
   <script src="index.js"></script>
 

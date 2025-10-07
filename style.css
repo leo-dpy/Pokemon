@@ -249,4 +249,24 @@ img {width: 200px; height: 200px;}
     .efficace {color:#ffdd57;font-weight:700;}
     .super-efficace {color:#7CFC00;font-weight:700;}
     .pas-tres-efficace {color:#ff5f52;font-weight:700;}
+    /* Bouton restart */
+    .restart-btn {position:fixed;right:20px;bottom:20px;background:#ff4757;border:none;color:#fff;font-weight:600;padding:12px 20px;border-radius:10px;font-size:0.9rem;cursor:pointer;box-shadow:0 6px 16px -4px rgba(0,0,0,.6);transition:background .3s, transform .25s;z-index:1200;}
+    .restart-btn:hover {background:#ff6b81;transform:translateY(-3px);} 
+    .restart-btn:active {transform:translateY(-1px);} 
+    .restart-btn.hidden {display:none;}
+
+    /* Badges stats */
+    .badges-container {display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:4px;min-height:22px;}
+    .stat-badge {background:rgba(255,255,255,0.15);padding:2px 6px;border-radius:8px;font-size:0.55rem;font-weight:700;letter-spacing:.5px;color:#fff;display:flex;align-items:center;gap:2px;box-shadow:0 0 0 1px rgba(255,255,255,.15);animation:badgePop .4s ease;}
+    .stat-badge.up {background:linear-gradient(135deg,#27ae60,#145a32);} 
+    .stat-badge.down {background:linear-gradient(135deg,#c0392b,#641e16);} 
+    @keyframes badgePop {0%{transform:scale(.4);opacity:0;}60%{transform:scale(1.15);opacity:1;}100%{transform:scale(1);opacity:1;}}
+
+    /* Dégâts popup */
+    .dmg-pop {position:absolute;font-family:Consolas,monospace;font-size:0.9rem;font-weight:700;color:#fff;text-shadow:0 2px 4px #000;pointer-events:none;animation:dmgFloat 1s ease forwards;}
+    .dmg-pop.crit {color:#ffdf4d;filter:drop-shadow(0 0 6px #ffdf4d);} 
+    @keyframes dmgFloat {0%{transform:translate(-50%,0) scale(.6);opacity:0;}20%{opacity:1;transform:translate(-50%,-10px) scale(1.05);}70%{opacity:1;transform:translate(-50%,-35px) scale(1);}100%{opacity:0;transform:translate(-50%,-55px) scale(.9);}}
+
+    /* Ajust overlay pour 3 pokemons */
+    .pokemon-list {max-width:1000px;}
             
