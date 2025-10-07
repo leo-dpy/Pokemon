@@ -305,6 +305,41 @@ function attaque(sourceColonne, elementAttaque){
   }
 }
 
+function spawnProjectile(sourceColonne, type, critique){
+  const sourceImg = sourceColonne==='gauche'? imgGauche : imgDroite;
+  const targetImg = sourceColonne==='gauche'? imgDroite : imgGauche;
+  const sRect = sourceImg.getBoundingClientRect();
+  const tRect = targetImg.getBoundingClientRect();
+  const proj = document.createElement('div');
+  const clsMap = { feu:'proj-feu', eau:'proj-eau', plante:'proj-plante', tenebres:'proj-tenebres', normal:'proj-normal', combat:'proj-combat', dragon:'proj-dragon' };
+  const cls = clsMap[type] || 'proj-normal';
+  proj.className = `proj ${cls}`;
+  if(critique) proj.style.filter = 'brightness(1.3) saturate(1.4)';
+  const startX = sourceColonne==='gauche'? (sRect.right) : (sRect.left - 28);
+  const startY = sRect.top + (sRect.height/2) - 14;
+  const endX = sourceColonne==='gauche'? (tRect.left + tRect.width/2 - 14) : (tRect.right - tRect.width/2 - 14);
+  const endY = tRect.top + (tRect.height/2) - 14;
+  proj.style.left = startX + 'px';
+  proj.style.top = startY + 'px';
+  document.body.appendChild(proj);
+  requestAnimationFrame(()=>{
+    proj.classList.add('proj-start');
+    const dx = endX - startX;
+    const dy = endY - startY;
+    proj.style.transform = `translate(${dx}px, ${dy}px) scale(1)`;
+  });
+  setTimeout(()=>{
+    proj.classList.add('proj-end');
+    const impact = document.createElement('div');
+    impact.className = 'impact';
+    impact.style.left = (endX - 21) + 'px';
+    impact.style.top = (endY - 21) + 'px';
+    document.body.appendChild(impact);
+    setTimeout(()=> impact.remove(), 500);
+    setTimeout(()=> proj.remove(), 320);
+  }, 520);
+}
+
 // --- Sélection ---
 pokemonOptions.forEach(opt=>{
   opt.addEventListener('click',()=>{
