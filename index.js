@@ -223,6 +223,10 @@ function attaque(sourceColonne, elementAttaque){
   if(combatTermine) return;
   const prevGauche = hpGauche;
   const prevDroite = hpDroite;
+  // Debug trace
+  if(window.__debugBattle){
+    console.log('[DEBUG attaque] start', {sourceColonne, nom: sourceColonne==='gauche'? (joueur&&joueur.nom): (ennemi&&ennemi.nom), hpGauche, hpDroite, attName: elementAttaque.textContent});
+  }
   const puissance = parseInt(elementAttaque.dataset.degat,10);
   const type = elementAttaque.dataset.type;
   const precisionBase = parseInt(elementAttaque.dataset.precision || '100',10);
@@ -271,16 +275,19 @@ function attaque(sourceColonne, elementAttaque){
     hpCible = Math.max(0, hpCible - degats);
     if(sourceColonne === 'gauche') hpDroite = hpCible; else hpGauche = hpCible;
     updateHPBars();
+    if(window.__debugBattle){ console.log('[DEBUG dégâts]', {degats, cible:(sourceColonne==='gauche'?'droite':'gauche'), hpGauche, hpDroite}); }
   }
   // Garde-fou: empêcher l'attaquant de se blesser lui-même par erreur
   if(sourceColonne==='gauche' && hpGauche < prevGauche && hpDroite===prevDroite){
     // rollback
     hpGauche = prevGauche; hpDroite = prevDroite; updateHPBars();
     enqueue('<em>Correction automatique: auto-dégât ignoré.</em>');
+    if(window.__debugBattle){ console.warn('[DEBUG auto-dégât détecté côté gauche – rollback]', {hpGauche, hpDroite}); }
   }
   if(sourceColonne==='droite' && hpDroite < prevDroite && hpGauche===prevGauche){
     hpGauche = prevGauche; hpDroite = prevDroite; updateHPBars();
     enqueue('<em>Correction automatique: auto-dégât ennemi ignoré.</em>');
+    if(window.__debugBattle){ console.warn('[DEBUG auto-dégât détecté côté droite – rollback]', {hpGauche, hpDroite}); }
   }
   let feedback = '';
   if(puissance>0) feedback = libelleEfficacite(mult);
@@ -319,6 +326,7 @@ function attaque(sourceColonne, elementAttaque){
   if(hpCible <= 0){
     finDePartie(`${defenseur.nom} est K.O ! ${(attaquant === joueur)?'Tu gagnes !':'Tu perds...'}`);
   }
+  if(window.__debugBattle){ console.log('[DEBUG attaque end]', {hpGauche, hpDroite}); }
 }
 
 // Suppression système de projectiles et secousses
