@@ -20,7 +20,7 @@ body{--bg:#0d1117;--panel:#161b22;--panel-alt:#1e2530;--accent:#ffcb05;--accent-
 img{max-width:100%;display:block;}
 .hp-wrapper{width:100%;}
 .hp-bar{position:relative;height:16px;background:#242c37;border-radius:10px;overflow:hidden;border:1px solid var(--border);}
-.hp-fill{position:absolute;inset:0;width:100%;background:linear-gradient(90deg,#35d07f,#1f9f55);transition:width .5s cubic-bezier(.55,.12,.24,.94),background .4s;}
+.hp-fill{position:absolute;inset:0;width:100%;background:linear-gradient(90deg,#35d07f,#1f9f55);transition:width .85s cubic-bezier(.22,.84,.3,1),background .4s;will-change:width;}
 .hp-fill.caution{background:linear-gradient(90deg,#e2c238,#b59116);} 
 .hp-fill.danger{background:linear-gradient(90deg,#e0524d,#b11f26);} 
 .hp-label{color:var(--text-dim);font-size:.7rem;margin-top:4px;letter-spacing:.5px;text-align:right;font-weight:500;}
@@ -66,5 +66,12 @@ img{max-width:100%;display:block;}
 .attaques-grid>div[data-type="psychique"]{border-left:4px solid #c45bff;}
 .attaques-grid>div[data-type="dragon"]{border-left:4px solid #7b5bff;}
 .attaques-grid>div[data-type="statut"]{border-left:4px solid #6d5dfc;}
+/* Overlay fin combat */
+#end-overlay .end-box{background:linear-gradient(135deg,#1f2732,#273646);padding:34px 46px;border-radius:18px;box-shadow:0 8px 30px -6px rgba(0,0,0,.65);text-align:center;max-width:480px;width:90%;animation:popEnd .55s ease;}
+#end-overlay h2{margin:0 0 18px;font-size:1.55rem;letter-spacing:.5px;background:linear-gradient(90deg,#ffcb05,#ffd84c);-webkit-background-clip:text;background-clip:text;color:transparent;}
+#return-menu-btn{background:#2a3a46;color:#e6edf3;border:1px solid #394956;padding:12px 22px;border-radius:10px;font-weight:600;cursor:pointer;letter-spacing:.5px;font-size:.8rem;transition:background .3s,border-color .3s,transform .25s;}
+#return-menu-btn:hover{background:#324552;border-color:#465a69;transform:translateY(-3px);} #return-menu-btn:active{transform:translateY(-1px);} 
+@keyframes popEnd{0%{transform:translateY(30px) scale(.9);opacity:0;}60%{transform:translateY(-6px) scale(1.02);opacity:1;}100%{transform:translateY(0) scale(1);opacity:1;}}
+
 /* Fin fichier : aucun bloc legacy restant */
             

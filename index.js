@@ -74,6 +74,10 @@ const barGauche = document.getElementById('bar-gauche');
 const barDroite = document.getElementById('bar-droite');
 const hpLabelGauche = document.getElementById('hp-gauche-label');
 const hpLabelDroite = document.getElementById('hp-droite-label');
+// Overlay fin de combat
+const endOverlay = document.getElementById('end-overlay');
+const endMessage = document.getElementById('end-message');
+const returnMenuBtn = document.getElementById('return-menu-btn');
 
 const attaquesGauche = [...document.querySelectorAll('.attaque-gauche > div')];
 const attaquesDroite = [...document.querySelectorAll('.attaque-droite > div')];
@@ -205,6 +209,12 @@ function finDePartie(message){
   [...attaquesGauche,...attaquesDroite].forEach(b=> b.style.pointerEvents='none');
   restartBtn.classList.remove('hidden');
   combatTermine = true;
+  let txt;
+  if(message.includes('Tu gagnes')) txt = 'Le Pokémon ennemi est K.O !';
+  else if(message.includes('Tu perds')) txt = 'Vous êtes K.O !';
+  else txt = message;
+  if(endMessage) endMessage.textContent = txt;
+  if(endOverlay) endOverlay.style.display='flex';
 }
 
 function attaque(sourceColonne, elementAttaque){
@@ -383,6 +393,11 @@ restartBtn.addEventListener('click', ()=> {
   setTimeout(()=> resetCombat(), 400);
 });
 
+returnMenuBtn && returnMenuBtn.addEventListener('click', ()=>{
+  if(endOverlay) endOverlay.style.display='none';
+  resetCombat();
+});
+
 // (Redéfinitions leviator / dracaufeu supprimées – déjà intégrées dans l'objet POKEMONS initial)
 
 const megaBtn = document.getElementById('mega-btn');
@@ -470,9 +485,8 @@ const oldFin = finDePartie;
 finDePartie = function(message){
   oldFin(message);
   megaBtn.classList.add('hidden');
-  // Afficher bouton fuite même après fin (permet de revenir à la sélection)
-  restartBtn.classList.remove('hidden');
 };
+  if(endOverlay) endOverlay.style.display='none';
 
 // Ajout fonctions supplémentaires méga
 function setTypes(pokemon, types){ pokemon.types = types; }
