@@ -339,6 +339,30 @@ button {
     -webkit-text-stroke: 1px rgba(0, 0, 0, 0.55);
 }
 
+/* Style pour capture réussie */
+#end-overlay #end-message.capture {
+    background: linear-gradient(110deg, #ffe082, #ffcb05 35%, #ff8f00 70%, #fff3c4);
+    -webkit-text-stroke: 1px rgba(0, 0, 0, 0.4);
+    color: #fff;
+    position: relative;
+}
+
+#end-overlay #end-message.capture:before {
+    content: "⚡";
+    position: absolute;
+    left: -40px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 2rem;
+    color: #ffcb05;
+    animation: sparkle 2s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+    0%, 100% { opacity: 0.5; transform: translateY(-50%) scale(1); }
+    50% { opacity: 1; transform: translateY(-50%) scale(1.2); }
+}
+
 /* Effet KO text pop */
 #end-overlay.show #end-message {
     animation: koPop .8s ease;

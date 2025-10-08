@@ -50,6 +50,16 @@ const POKEMONS = {
       { nom: 'Onde Psy', puissance: 35, type: 'psychique', precision: 95, pp: 15 },
       { nom: 'Plénitude', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
     ]
+  },
+  ectoplasma: {
+    nom: 'Ectoplasma', type: 'spectre', image: 'images/ectoplasma.png', baseAtk: 65, baseDef: 60,
+    mega: { nom: 'Méga-Ectoplasma', type: 'spectre', image: 'images/mega ectoplasma.png', baseAtk: 90, baseDef: 85 },
+    attaques: [
+      { nom: 'Léchouille', puissance: 30, type: 'spectre', precision: 100, pp: 30 },
+      { nom: 'Ball\'Ombre', puissance: 45, type: 'spectre', precision: 85, pp: 15 },
+      { nom: 'Onde Folie', puissance: 0, type: 'statut', effet: 'atk-', precision: 90, pp: 10 },
+      { nom: 'Hypnose', puissance: 0, type: 'statut', effet: 'prec-', precision: 60, pp: 20 }
+    ]
   }
 };
 
@@ -97,6 +107,8 @@ const shopItemsContainer = document.getElementById('shop-items');
 const closeShopBtn = document.getElementById('close-shop-btn');
 const shopInfo = document.getElementById('shop-info');
 const shopCurrencyAmount = document.getElementById('shop-currency-amount');
+// Conteneur liste sélection (pour ajouter les Pokémon capturés)
+const pokemonListContainer = document.querySelector('.pokemon-list');
 
 const attaquesGauche = [...document.querySelectorAll('.attaque-gauche > div')];
 const attaquesDroite = [...document.querySelectorAll('.attaque-droite > div')];
@@ -418,19 +430,18 @@ function attaque(sourceColonne, elementAttaque){
   if(combatTermine) return;
   const prevGauche = hpGauche;
   const prevDroite = hpDroite;
-  // Debug trace
   if(window.__debugBattle){
     console.log('[DEBUG attaque] start', {sourceColonne, nom: sourceColonne==='gauche'? (joueur&&joueur.nom): (ennemi&&ennemi.nom), hpGauche, hpDroite, attName: elementAttaque.textContent});
   }
-  const puissance = parseInt(elementAttaque.dataset.degat,10);
+  const puissance = parseInt(elementAttaque.dataset.degat, 10);
   const type = elementAttaque.dataset.type;
-  const precisionBase = parseInt(elementAttaque.dataset.precision || '100',10);
+  const precisionBase = parseInt(elementAttaque.dataset.precision || '100', 10);
   const attaquant = sourceColonne === 'gauche' ? joueur : ennemi;
   const defenseur = sourceColonne === 'gauche' ? ennemi : joueur;
   let hpCible = sourceColonne === 'gauche' ? hpDroite : hpGauche;
   const cibleType = defenseur.type;
-  const side = sourceColonne === 'gauche' ? 'gauche':'droite';
-  const oppSide = sourceColonne === 'gauche' ? 'droite':'gauche';
+  const side = sourceColonne === 'gauche' ? 'gauche' : 'droite';
+  const oppSide = sourceColonne === 'gauche' ? 'droite' : 'gauche';
 
   if(window.__debugBattle && (isNaN(puissance))){
     console.warn('[DEBUG puissance NaN] dataset.degat=', elementAttaque.dataset.degat, 'element:', elementAttaque);
@@ -448,8 +459,7 @@ function attaque(sourceColonne, elementAttaque){
     if(ppRestant===0) elementAttaque.style.opacity=.35;
   majLibelleAttaque(elementAttaque);
   }
-
-  // Précision
+  // Calcul précision
   const accMult = stageToMult(stats[side].accStage);
   const evaMult = stageToMult(stats[oppSide].evaStage);
   const precisionEffective = Math.min(100, Math.max(1, Math.round(precisionBase * accMult / evaMult)));
@@ -539,35 +549,76 @@ function attaque(sourceColonne, elementAttaque){
 
 
 // --- Sélection ---
+// Fonction utilitaire pour ajouter une option de sélection si elle n'existe pas déjà
+function addPokemonOption(key){
+  if(!pokemonListContainer) return;
+  if(!POKEMONS[key]) return;
+  if(document.querySelector(`.pokemon-option[data-key="${key}"]`)) return; // déjà présent
+  const data = POKEMONS[key];
+  const div = document.createElement('div');
+  div.className='pokemon-option';
+  div.dataset.key = key;
+  const typeLabel = (data.type || (data.types && data.types[0]) || '').toString();
+  const typePretty = typeLabel ? typeLabel.charAt(0).toUpperCase()+typeLabel.slice(1) : '';
+  div.innerHTML = `
+    <div class="pokeball"></div>
+    <img src="${data.image}" alt="${data.nom}">
+    <span>${data.nom} (${typePretty})</span>
+  `;
+  div.addEventListener('click', ()=>{
+    const keySel = key; // simple sélection (rollback logique USED_PLAYER)
+    joueur = POKEMONS[keySel];
+    const enemiKey = selectionnerEnnemiSecurise(keySel);
+  if(!enemiKey){ enqueue('<em>Aucun ennemi disponible.</em>'); joueur=null; return; }
+    ennemi = POKEMONS[enemiKey];
+    imgGauche.src = joueur.image; imgDroite.src = ennemi.image;
+    nameGaucheSpan.textContent = joueur.nom; nameDroiteSpan.textContent = ennemi.nom;
+    throwPokeball(imgGauche); throwPokeball(imgDroite); setTimeout(()=> normaliserSprites(),700);
+    configAttaques('gauche', joueur); configAttaques('droite', ennemi);
+    ppState.gauche = joueur.attaques.map(a=> a.pp || 0); ppState.droite = ennemi.attaques.map(a=> a.pp || 0);
+    overlay.style.display='none';
+    enqueue(`<strong>Combat :</strong> ${joueur.nom} VS ${ennemi.nom}`);
+    updateHPBars(); majBadges();
+    if(menuBtn) menuBtn.classList.remove('hidden');
+    if(bagBtn) bagBtn.classList.remove('hidden');
+    if(shopBtn) shopBtn.classList.remove('hidden');
+    tour=1; phase='player'; majIndicateurTour(); verrouillerAttaques(false); updateTransformationButtons();
+  });
+  pokemonListContainer.appendChild(div);
+}
+
 pokemonOptions.forEach(opt=>{
   opt.addEventListener('click',()=>{
     const key = opt.dataset.key;
+    // rollback: permettre la re-sélection libre
     joueur = POKEMONS[key];
-    const autres = Object.entries(POKEMONS).filter(([k])=> k!==key).map(e=> e[1]);
-    ennemi = autres[Math.floor(Math.random()*autres.length)];
+    const enemiKey = selectionnerEnnemiSecurise(key);
+  if(!enemiKey){ enqueue('<em>Aucun ennemi disponible.</em>'); joueur=null; return; }
+    ennemi = POKEMONS[enemiKey];
 
     imgGauche.src = joueur.image;
     imgDroite.src = ennemi.image;
-  nameGaucheSpan.textContent = joueur.nom;
-  nameDroiteSpan.textContent = ennemi.nom;
+    nameGaucheSpan.textContent = joueur.nom;
+    nameDroiteSpan.textContent = ennemi.nom;
+  // Animation d'apparition (Pokéball)
+  throwPokeball(imgGauche);
+  throwPokeball(imgDroite);
+  setTimeout(()=> normaliserSprites(), 700);
 
     configAttaques('gauche', joueur);
     configAttaques('droite', ennemi);
     ppState.gauche = joueur.attaques.map(a=> a.pp || 0);
     ppState.droite = ennemi.attaques.map(a=> a.pp || 0);
 
-    overlay.style.display = 'none';
-  throwPokeball(imgGauche);
-  setTimeout(()=> throwPokeball(imgDroite),450);
+  overlay.style.display = 'none';
   enqueue(`<strong>Combat :</strong> ${joueur.nom} VS ${ennemi.nom}`);
     updateHPBars();
     majBadges();
     if(menuBtn) menuBtn.classList.remove('hidden');
-  if(bagBtn) bagBtn.classList.remove('hidden');
-  if(shopBtn) shopBtn.classList.remove('hidden');
-  tour = 1; phase='player'; majIndicateurTour();
-  verrouillerAttaques(false);
-    
+    if(bagBtn) bagBtn.classList.remove('hidden');
+    if(shopBtn) shopBtn.classList.remove('hidden');
+    tour = 1; phase='player'; majIndicateurTour();
+    verrouillerAttaques(false);
     // Gestion des boutons Méga-évolution et Gigamax
     updateTransformationButtons();
   });
@@ -623,6 +674,8 @@ attaquesDroite.forEach(d=> d.style.pointerEvents='none');
 
 enqueue('Sélectionne un Pokémon pour commencer.');
 
+// (Styles capture collection supprimés)
+
 // Snapshot initial pour reset complet
 const __BASE_POKEMONS = JSON.parse(JSON.stringify(POKEMONS));
 
@@ -633,6 +686,7 @@ function resetCombat(){
   ennemiMegaUtilisee=false; ennemiGigamaxUtilise=false; processing=false; actionQueue=[];
   stats = { gauche:{atkStage:0,defStage:0,accStage:0,evaStage:0}, droite:{atkStage:0,defStage:0,accStage:0,evaStage:0} };
   ppState = { gauche:[], droite:[] };
+  // NOTE: pokepieces et CAPTURED sont préservés intentionnellement
   // Effacer log et interface
   logBox.innerHTML='';
   document.getElementById('badges-gauche').innerHTML='';
@@ -654,9 +708,47 @@ function resetCombat(){
   shopBtn && shopBtn.classList.add('hidden');
   megaBtn.classList.remove('disabled'); gigamaxBtn.classList.remove('disabled');
   megaBtn.disabled = false; gigamaxBtn.disabled = false;
+  // S'assurer que le sac est de nouveau activé après un combat précédent / capture
+  if(bagBtn){ bagBtn.disabled = false; }
   updateHPBars();
   enqueue('Sélectionne un Pokémon pour commencer.');
   overlay.style.display='flex';
+  // Réappliquer listeners sur les options de sélection
+  setTimeout(()=>{
+    document.querySelectorAll('.pokemon-option').forEach(opt=>{
+      opt.style.pointerEvents = 'auto';
+      opt.classList.remove('disabled');
+      opt.onclick = null;
+      opt.addEventListener('click',()=>{
+        const key = opt.dataset.key;
+        joueur = POKEMONS[key];
+  const enemiKey = selectionnerEnnemiSecurise(key);
+        if(!enemiKey){ enqueue('<em>Aucun ennemi disponible (déjà possédés). Choisis un autre Pokémon.</em>'); joueur=null; return; }
+        ennemi = POKEMONS[enemiKey];
+        imgGauche.src = joueur.image;
+        imgDroite.src = ennemi.image;
+        nameGaucheSpan.textContent = joueur.nom;
+        nameDroiteSpan.textContent = ennemi.nom;
+  throwPokeball(imgGauche);
+  throwPokeball(imgDroite);
+  setTimeout(()=> normaliserSprites(), 700);
+        configAttaques('gauche', joueur);
+        configAttaques('droite', ennemi);
+        ppState.gauche = joueur.attaques.map(a=> a.pp || 0);
+        ppState.droite = ennemi.attaques.map(a=> a.pp || 0);
+    overlay.style.display = 'none';
+    enqueue(`<strong>Combat :</strong> ${joueur.nom} VS ${ennemi.nom}`);
+        updateHPBars();
+        majBadges();
+        if(menuBtn) menuBtn.classList.remove('hidden');
+        if(bagBtn) bagBtn.classList.remove('hidden');
+        if(shopBtn) shopBtn.classList.remove('hidden');
+        tour = 1; phase='player'; majIndicateurTour();
+        verrouillerAttaques(false);
+        updateTransformationButtons();
+      });
+    });
+  }, 100);
   tour=1; phase='player';
   // Restaurer inventaire (quantités)
   Object.keys(__BASE_INVENTAIRE).forEach(k=>{
@@ -693,7 +785,8 @@ const INVENTAIRE = {
   superPotion: { id:'superPotion', nom:'Super Potion', desc:'+40 PV', qty:2, type:'heal', valeur:40 },
   potionPP: { id:'potionPP', nom:'Potion PP', desc:'+5 PP à une attaque', qty:4, type:'pp', valeur:5 },
   elixir: { id:'elixir', nom:'Élixir', desc:'Restaure tous les PP d\'une attaque', qty:2, type:'ppfull' },
-  maxPotion: { id:'maxPotion', nom:'Max Potion', desc:'PV à 100%', qty:1, type:'healfull' }
+  maxPotion: { id:'maxPotion', nom:'Max Potion', desc:'PV à 100%', qty:1, type:'healfull' },
+  pokeball: { id:'pokeball', nom:'Poké Ball', desc:'Capture un Pokémon sauvage', qty:5, type:'capture' }
 };
 // Snapshot inventaire (placé après la déclaration pour éviter ReferenceError)
 const __BASE_INVENTAIRE = JSON.parse(JSON.stringify(INVENTAIRE));
@@ -706,8 +799,45 @@ const SHOP_ITEMS = {
   superPotion: { id:'superPotion', nom:'Super Potion', desc:'+40 PV', prix:25 },
   potionPP: { id:'potionPP', nom:'Potion PP', desc:'+5 PP à une attaque', prix:20 },
   elixir: { id:'elixir', nom:'Élixir', desc:'Restaure tous les PP d\'une attaque', prix:35 },
-  maxPotion: { id:'maxPotion', nom:'Max Potion', desc:'PV à 100%', prix:50 }
+  maxPotion: { id:'maxPotion', nom:'Max Potion', desc:'PV à 100%', prix:50 },
+  pokeball: { id:'pokeball', nom:'Poké Ball', desc:'Capture un Pokémon sauvage', prix:30 }
 };
+
+// ================= Système de capture simplifié =================
+let captureEnCours = false; // Empêche plusieurs animations simultanées
+// CAPTURED: pokémon réellement capturés via Poké Ball
+const CAPTURED = new Set();
+let currentCaptureEnemyKey = null; // clé de l'ennemi en cours de capture (sécurise si menu cliqué)
+// Redéfinir helper debug maintenant que les ensembles existent
+window.__captureStatus = ()=>({ captured:[...CAPTURED], total:Object.keys(POKEMONS).length });
+
+function choisirEnnemi(keyExclu){
+  const keys = Object.keys(POKEMONS);
+  if(keys.length<=1) return keys.find(k=> k!==keyExclu) || null;
+  let pick; do { pick = keys[(Math.random()*keys.length)|0]; } while(pick===keyExclu);
+  if(window.__debugCapture){ console.log('[DEBUG choisirEnnemi]', {keyExclu, pick}); }
+  return pick;
+}
+
+// Sélection simple: exclut uniquement le Pokémon choisi par le joueur
+function selectionnerEnnemiSecurise(playerKey){ return choisirEnnemi(playerKey); }
+
+function normaliserSprites(){
+  [imgGauche, imgDroite].forEach(img=>{
+    if(!img) return;
+    img.classList.remove('hidden');
+    // Ne pas annuler totalement les filtres d'animations (méga / gigamax), juste enlever un éventuel grayscale ou opacity résiduels
+    const current = getComputedStyle(img).filter;
+    if(current && /grayscale|brightness\(0\.?|opacity\(0/.test(current)){
+      img.style.filter='';
+    }
+    img.style.opacity='1';
+    img.classList.add('spawn');
+    setTimeout(()=> img.classList.remove('spawn'),650);
+  });
+}
+
+// Ancienne fonction (collection complète) retirée car non utilisée
 
 function renderInventaire(){
   if(!bagItemsContainer) return;
@@ -810,6 +940,15 @@ function utiliserObjet(obj){
       ppSelectionActive = false;
     };
     return; // On ne consomme pas tant que pas cliqué
+  } else if(obj.type==='capture'){
+    // Tentative de capture
+    if(!ennemi || hpDroite <= 0) {
+      bagInfo.textContent='Aucun Pokémon à capturer.';
+      return;
+    }
+    fermerSac();
+    tentativeCapture(obj);
+    return; // La consommation se fait dans tentativeCapture si réussie
   }
   obj.qty -=1;
   const itemDiv = bagItemsContainer.querySelector(`[data-item-id="${obj.id}"]`);
@@ -896,6 +1035,92 @@ shopBtn && shopBtn.addEventListener('click', ()=>{
 });
 closeShopBtn && closeShopBtn.addEventListener('click', ()=> fermerShop());
 shopOverlay && shopOverlay.addEventListener('click', e=>{ if(e.target===shopOverlay) fermerShop(); });
+
+// ================= Fonctions de capture =================
+function tentativeCapture(pokeball){
+  if(!ennemi || hpDroite<=0 || combatTermine || captureEnCours) return;
+  captureEnCours = true;
+  // Bloquer temporairement le bouton menu / fuite pendant la capture
+  menuBtn && (menuBtn.disabled = true);
+  restartBtn && restartBtn.classList.add('hidden');
+  // Mémoriser la clé de l'ennemi tout de suite pour ne pas la perdre en cas de reset prématuré
+  try { currentCaptureEnemyKey = Object.entries(POKEMONS).find(([k,v])=> v===ennemi)?.[0] || null; } catch(_e){ currentCaptureEnemyKey = null; }
+  const container = imgDroite.parentElement;
+  if(container){ container.querySelectorAll('.capture-ball').forEach(b=> b.remove()); }
+  const tauxBase = Math.max(10, 80 - hpDroite);
+  const reussite = Math.random()*100 < tauxBase;
+  animationCapture(reussite, pokeball);
+}
+
+function animationCapture(reussite, pokeball){
+  const container = imgDroite.parentElement;
+  container.style.position='relative';
+  verrouillerAttaques(true);
+  bagBtn && (bagBtn.disabled=true);
+  // Petite Pokéball (lancer)
+  const small=document.createElement('div');
+  small.className='capture-ball';
+  small.style.cssText='position:absolute;width:32px;height:32px;top:100%;left:50%;transform:translateX(-50%);background:linear-gradient(to bottom,#e60012 0%,#e60012 45%,#333 47%,#333 53%,#f8f8f8 55%,#f8f8f8 100%);border:3px solid #000;border-radius:50%;z-index:120;animation:throwBall .9s ease-out forwards;box-shadow:inset 0 0 0 2px #fff,0 4px 8px rgba(0,0,0,.35)';
+  const btn=document.createElement('div');btn.style.cssText='position:absolute;width:8px;height:8px;background:#333;border:2px solid #fff;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%)';small.appendChild(btn);
+  if(!document.querySelector('#capture-keyframes-v2')){const s=document.createElement('style');s.id='capture-keyframes-v2';s.textContent='@keyframes throwBall{0%{transform:translateX(-50%) translateY(0) rotate(0) scale(1);}55%{transform:translateX(-50%) translateY(-85px) rotate(200deg) scale(1.1);}100%{transform:translateX(-50%) translateY(-42px) rotate(360deg) scale(1);} }@keyframes bigShake{0%,100%{transform:translate(-50%,-50%) rotate(0);}15%{transform:translate(-50%,-52%) rotate(-18deg);}35%{transform:translate(-50%,-52%) rotate(18deg);}55%{transform:translate(-50%,-52%) rotate(-18deg);}75%{transform:translate(-50%,-52%) rotate(18deg);} }@keyframes captureGlow{0%{opacity:0;transform:scale(.5);}50%{opacity:1;transform:scale(1.25);}100%{opacity:0;transform:scale(1.6);} }';document.head.appendChild(s);} 
+  container.appendChild(small);
+  setTimeout(()=>{
+    imgDroite.classList.add('hidden');
+    small.remove();
+    const big=document.createElement('div');
+    big.className='capture-ball big';
+    big.style.cssText='position:absolute;width:70px;height:70px;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(to bottom,#e60012 0%,#e60012 45%,#222 47%,#222 53%,#f8f8f8 55%,#f8f8f8 100%);border:4px solid #000;border-radius:50%;z-index:130;animation:bigShake 1.2s ease-in-out 1;box-shadow:inset 0 0 0 3px #fff,0 0 14px rgba(255,255,255,.25),0 6px 14px rgba(0,0,0,.45)';
+    const btn2=document.createElement('div');btn2.style.cssText='position:absolute;width:14px;height:14px;background:#222;border:3px solid #fff;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%)';big.appendChild(btn2);container.appendChild(big);
+    setTimeout(()=>{
+      if(reussite){
+        big.style.animation='none';big.style.background='linear-gradient(to bottom,#4CAF50 0%,#4CAF50 45%,#1d1d1d 47%,#1d1d1d 53%,#81C784 55%,#81C784 100%)';big.style.boxShadow='inset 0 0 0 3px #fff,0 0 25px #4CAF50,0 0 55px #4CAF50';
+        const glow=document.createElement('div');glow.style.cssText='position:absolute;inset:-25px;border-radius:50%;background:radial-gradient(circle,rgba(76,175,80,.35) 0%,transparent 70%);animation:captureGlow 1.1s ease-in-out';big.appendChild(glow);
+  enqueue(`<em style=\"color:#4CAF50;\">Capture réussie ! ${ennemi.nom} capturé.</em>`);
+  // Ajout simple à l'ensemble des capturés (utilise la clé mémorisée au lancement de la capture)
+  if(currentCaptureEnemyKey){
+          CAPTURED.add(currentCaptureEnemyKey);
+          // Rendre le Pokémon capturé sélectionnable (s'il n'était pas dans la liste initiale)
+          addPokemonOption(currentCaptureEnemyKey);
+        }
+        // Vérifier si tous capturés -> reset automatique après message
+        if(CAPTURED.size === Object.keys(POKEMONS).length){
+          enqueue('<strong>Tous les Pokémon sont capturés ! Réinitialisation automatique...</strong>');
+          setTimeout(()=>{ resetCombat(); CAPTURED.clear(); }, 2200);
+        }
+        const bonus=Math.floor(Math.random()*15)+25; pokepieces+=bonus; enqueue(`<em style=\"color:#ffcb05;\">+${bonus} PokéPièces bonus pour la capture !</em>`); updateShopCurrency();
+        pokeball.qty-=1; renderInventaire();
+        setTimeout(()=>{ finDeCombatCapture(ennemi.nom); big.remove(); captureEnCours=false; currentCaptureEnemyKey=null; menuBtn && (menuBtn.disabled=false); },1400);
+  // Ré-activer le sac après la capture (il était désactivé pendant l'animation). On laisse l'ouverture bloquée par combatTermine jusqu'au prochain reset.
+  if(bagBtn){ bagBtn.disabled = false; }
+      } else {
+        big.style.animation='none';big.style.background='linear-gradient(to bottom,#f44336 0%,#f44336 45%,#222 47%,#222 53%,#ffcdd2 55%,#ffcdd2 100%)';big.style.boxShadow='inset 0 0 0 3px #fff,0 0 18px #f44336,0 6px 16px rgba(0,0,0,.45)';
+        enqueue(`<em style=\"color:#f44336;\">Capture échouée ! ${ennemi.nom} s'est échappé !</em>`);
+        pokeball.qty-=1; renderInventaire();
+        setTimeout(()=>{ imgDroite.classList.remove('hidden'); big.remove(); captureEnCours=false; currentCaptureEnemyKey=null; menuBtn && (menuBtn.disabled=false); verrouillerAttaques(false); bagBtn && (bagBtn.disabled=false); },900);
+      }
+    },1250);
+  },900);
+}
+
+// ajouterPokemonSelectable supprimé (collection retirée)
+
+// Fonction spéciale pour fin de combat par capture
+function finDeCombatCapture(nomPokemon) {
+  [...attaquesGauche,...attaquesDroite].forEach(b=> b.style.pointerEvents='none');
+  restartBtn.classList.remove('hidden');
+  combatTermine = true;
+  
+  if(endMessage){
+    endMessage.style.display = 'block';
+    endMessage.classList.remove('win','lose');
+    endMessage.classList.add('capture');
+    endMessage.textContent = `${nomPokemon.toUpperCase()} ATTRAPÉ !`;
+  }
+  if(endOverlay){
+    endOverlay.style.display='flex';
+    endOverlay.classList.add('show');
+  }
+}
 
 // Fonction pour mettre à jour l'état des boutons de transformation
 function updateTransformationButtons() {
@@ -1007,9 +1232,7 @@ configAttaques = function(colonne, pokemon){
 
 // Etendre effets dans attaque
 const oldAttaque = attaque;
-attaque = function(sourceColonne, elementAttaque){
-  oldAttaque(sourceColonne, elementAttaque);
-};
+attaque = function(sourceColonne, elementAttaque){ oldAttaque(sourceColonne, elementAttaque); };
 
 // Extension effets statut dans la fonction attaque existante (ré-édition légère)
 // On va monkey patcher la logique sans tout réécrire :
@@ -1025,30 +1248,15 @@ ennemiTours = 0; // Compteur de décisions ennemies
 function decisionEnnemi() {
   if (!ennemi || hpDroite <= 0) return null;
 
-  // Conditions de transformation aléatoire (PAS au premier tour ennemi)
+  // Les ennemis ne peuvent plus se transformer (Méga/Gigamax désactivés)
+  // Commenté pour désactiver les transformations ennemies :
+  /*
   const canGigamax = ennemi.gigamax && !ennemiGigamaxUtilise && !ennemi.__gigamax;
   const canMega = ennemi.mega && !ennemiMegaUtilisee && !ennemi.__mega;
   if (ennemiTours >= 1 && (canGigamax || canMega)) {
-    // Probabilité de base augmente avec le nombre de tours ennemis
-    let p = 0.15 + Math.min(0.30, ennemiTours * 0.05); // plafonné à 45%
-    // Bonus selon l'état des PV (plus faible -> plus de chances)
-    if (hpDroite <= 75) p += 0.05;
-    if (hpDroite <= 55) p += 0.10;
-    if (hpDroite <= 35) p += 0.15;
-    // Réduction si le joueur est très bas en PV (pour éviter transformation trop gratuite)
-    if (hpGauche <= 30) p *= 0.75;
-    if (p > 0.65) p = 0.65; // hard cap
-    if (Math.random() < p) {
-      // Choix de la forme : si les deux sont possibles on répartit (léger biais gigamax)
-      if (canGigamax && canMega) {
-        return Math.random() < 0.55 ? { type: 'gigamax' } : { type: 'mega' };
-      } else if (canGigamax) {
-        return { type: 'gigamax' };
-      } else if (canMega) {
-        return { type: 'mega' };
-      }
-    }
+    // ... code de transformation désactivé
   }
+  */
 
   // Pas de transformation ce tour -> sélection d'attaque
   const attaquesDisponibles = ennemi.attaques.map((att,idx)=>({att,idx})).filter(({att,idx})=>{
@@ -1108,10 +1316,12 @@ setTypes(POKEMONS.leviator, ['eau']);
 setTypes(POKEMONS.dragaufeu, ['feu']);
 setTypes(POKEMONS.pikachu, ['electrique']);
 setTypes(POKEMONS.mewtwo, ['psychique']);
+setTypes(POKEMONS.ectoplasma, ['spectre']);
 // Ajout types méga multiples
 POKEMONS.leviator.mega.types = ['eau','tenebres'];
 POKEMONS.dragaufeu.mega.types = ['feu','dragon'];
 if(POKEMONS.tortank.mega){ POKEMONS.tortank.mega.types = ['eau']; }
+if(POKEMONS.ectoplasma.mega){ POKEMONS.ectoplasma.mega.types = ['spectre','psychique']; }
 
 // Attaques post-méga (remplacement)
 const MEGA_NEW_ATTACKS = {
@@ -1138,6 +1348,12 @@ const MEGA_NEW_ATTACKS = {
     { nom:'Vibraqua', puissance:40, type:'eau', precision:100, pp:15 },
     { nom:'Aqua-Jet', puissance:30, type:'eau', precision:100, pp:20 },
     { nom:'Carapace Renforcée', puissance:0, type:'statut', effet:'atk+', precision:100, pp:15 }
+  ],
+  'Méga-Ectoplasma': [
+    { nom:'Ball\'Ombre', puissance:50, type:'spectre', precision:90, pp:15 },
+    { nom:'Dévorêve', puissance:45, type:'spectre', precision:85, pp:10 },
+    { nom:'Psyko', puissance:40, type:'psychique', precision:100, pp:15 },
+    { nom:'Malédiction', puissance:0, type:'statut', effet:'atk+', precision:100, pp:10 }
   ]
 };
 
@@ -1165,142 +1381,4 @@ function afterAction(){
       const b=document.createElement('div');b.className='badge-mega';b.textContent='MEGA';cont.prepend(b);
     }
   }
-  if(joueur && joueur.nom && joueur.nom.includes('Gigamax')){
-    const cont = document.getElementById('badges-gauche');
-    if(cont && !cont.querySelector('.badge-gigamax')){
-      const b=document.createElement('div');b.className='badge-gigamax';b.textContent='GIGA';cont.prepend(b);
-    }
-  }
 }
-window.afterAction = afterAction;
-
-// Amélioration appliquerMega pour remplacement attaques + boosts progressifs
-const oldAppliquerMega = appliquerMega;
-appliquerMega = function(pokemon, cote){
-  oldAppliquerMega(pokemon, cote);
-  // Remplacer attaques si liste spéciale
-  if(MEGA_NEW_ATTACKS[pokemon.nom]){
-    pokemon.attaques = MEGA_NEW_ATTACKS[pokemon.nom];
-    configAttaques(cote==='gauche'?'gauche':'droite', pokemon);
-    // Récupérer le max PP pour chaque attaque nouvellement acquise
-    const attaquesDivs = cote==='gauche' ? attaquesGauche : attaquesDroite;
-    attaquesDivs.forEach((div, i) => {
-      if(pokemon.attaques[i] && typeof pokemon.attaques[i].pp !== 'undefined') {
-        div.dataset.pprestant = pokemon.attaques[i].pp;
-        majLibelleAttaque(div);
-      }
-    });
-  }
-  // Soins bonus lors de la méga-évolution
-  const side = cote==='gauche' ? 'gauche' : 'droite';
-  // Équilibrage : le joueur soigne 25, l'ennemi seulement 12
-  const healBase = side==='droite' ? 12 : 25; // quantité brute de soin
-  let avant = side==='gauche'? hpGauche : hpDroite;
-  let recup = Math.min(healBase, 100 - avant);
-  if(recup > 0){
-    if(side==='gauche') hpGauche += recup; else hpDroite += recup;
-    updateHPBars({ healSide: side });
-    enqueue(`<em>${pokemon.nom} regagne ${recup} PV grâce à son énergie méga !</em>`);
-  }
-  if(side==='gauche'){
-    // Boosts progressifs pour le joueur uniquement
-    let step = 0;
-    const interval = setInterval(()=>{
-      if(step===0) stats.gauche.atkStage = Math.min(stats.gauche.atkStage+1,6);
-      if(step===1) stats.gauche.defStage = Math.min(stats.gauche.defStage+1,6);
-      if(step===2) stats.gauche.accStage = Math.min(stats.gauche.accStage+1,6);
-      majBadges();
-      step++;
-      if(step>2) clearInterval(interval);
-    },600);
-    enqueue(`<div class='mega-log'><em>La puissance de ${pokemon.nom} monte en flèche !</em></div>`);
-  } else {
-    // Ennemi : boost immédiat plus modeste : +1 DEF seulement
-    stats.droite.defStage = Math.min(stats.droite.defStage+1,6);
-    majBadges();
-    enqueue(`<div class='mega-log'><em>${pokemon.nom} se transforme prudemment.</em></div>`);
-  }
-};
-
-// ================= Gigamax ===================
-function appliquerGigamax(pokemon, cote){
-  if(!pokemon.gigamax) return;
-  const isJoueur = cote==='gauche';
-  const imgEl = isJoueur ? imgGauche : imgDroite;
-  imgEl.classList.add('gigamax-transform');
-  setTimeout(()=>{ imgEl.classList.remove('gigamax-transform'); imgEl.classList.add('gigamax-aura'); },1400);
-  const host = imgEl.parentElement;
-  if(host){
-    for(let i=0;i<6;i++){
-      setTimeout(()=>{
-        const bolt=document.createElement('div');
-        bolt.className='gigamax-electric';
-        host.style.position='relative';
-        host.appendChild(bolt);
-        setTimeout(()=> bolt.remove(), 900);
-      }, i*130);
-    }
-  }
-  pokemon.nom = pokemon.gigamax.nom;
-  pokemon.type = pokemon.gigamax.type;
-  pokemon.baseAtk = pokemon.gigamax.baseAtk;
-  pokemon.baseDef = pokemon.gigamax.baseDef;
-  imgEl.src = pokemon.gigamax.image;
-  if(isJoueur) nameGaucheSpan.textContent = pokemon.nom; else nameDroiteSpan.textContent = pokemon.nom;
-  enqueue(`<span class='gigamax-log'><strong>${pokemon.nom}</strong> libère son pouvoir Gigamax !</span>`);
-  const side = cote==='gauche'? 'gauche':'droite';
-  let avant = side==='gauche'? hpGauche: hpDroite;
-  const bonus = side==='droite' ? Math.min(100-avant, 15) : Math.min(100-avant, 30);
-  if(bonus>0){ if(side==='gauche') hpGauche += bonus; else hpDroite += bonus; updateHPBars({healSide: side}); enqueue(`<em>${pokemon.nom} gagne ${bonus} PV sous forme d'énergie Gigamax !</em>`); }
-  if(GIGAMAX_ATTACKS[pokemon.nom]){ pokemon.attaques = GIGAMAX_ATTACKS[pokemon.nom]; configAttaques(side, pokemon); }
-  // Récupérer le max PP pour chaque attaque nouvellement acquise
-  if(GIGAMAX_ATTACKS[pokemon.nom]){
-    const attaquesDivs = side==='gauche' ? attaquesGauche : attaquesDroite;
-    attaquesDivs.forEach((div, i) => {
-      if(pokemon.attaques[i] && typeof pokemon.attaques[i].pp !== 'undefined') {
-        div.dataset.pprestant = pokemon.attaques[i].pp;
-        majLibelleAttaque(div);
-      }
-    });
-  }
-  if(side==='gauche'){
-    stats.gauche.atkStage = Math.min(stats.gauche.atkStage+1,6);
-    stats.gauche.defStage = Math.min(stats.gauche.defStage+1,6);
-  } else {
-    stats.droite.atkStage = Math.min(stats.droite.atkStage+1,6); // ennemi: boost limité
-  }
-  majBadges();
-}
-
-// Paralysie simple sur Giga-Foudre (30% chance d'annuler prochaine attaque ennemie)
-const oldAttaque2 = attaque;
-attaque = function(sourceColonne, elementAttaque){
-  if(sourceColonne==='droite' && ennemi && ennemi.__paralyseTour){
-    enqueue(`<em>${ennemi.nom} est paralysé et ne peut pas attaquer !</em>`);
-    delete ennemi.__paralyseTour;
-    return;
-  }
-  oldAttaque2(sourceColonne, elementAttaque);
-  if(sourceColonne==='gauche' && elementAttaque && (elementAttaque.dataset.originalname==='Giga-Foudre')){
-    if(Math.random()<0.3 && ennemi && hpDroite>0){
-      ennemi.__paralyseTour = true;
-      enqueue(`<em>${ennemi.nom} est paralysé par l'électricité gigantesque !</em>`);
-    }
-  }
-};
-
-// Annulation de la sélection PP via touche Échap
-document.addEventListener('keydown', (e)=>{
-  if(e.key === 'Escape' && ppSelectionActive){
-    if(typeof window.__ppSelectCancel === 'function'){
-      window.__ppSelectCancel();
-    } else {
-      // Nettoyage manuel de secours
-      attaquesGauche.forEach(d2=>{ d2.classList.remove('pp-selectable'); d2.style.outline=''; d2.style.cursor=''; });
-      ppSelectionActive = false;
-      enqueue('<em>Sélection PP annulée.</em>');
-    }
-  }
-});
-
-
