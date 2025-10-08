@@ -1153,6 +1153,56 @@ const GIGAMAX_ATTACKS = {
   ]
 };
 
+// Transformation Gigamax (semblable à Mega mais distincte visuellement & attaques spécifiques)
+function appliquerGigamax(pokemon, cote){
+  if(!pokemon.gigamax) return;
+  const isJoueur = cote==='gauche';
+  const imgEl = isJoueur ? imgGauche : imgDroite;
+  // Effet visuel simple: flash + aura jaune + légère augmentation taille
+  imgEl.classList.add('gigamax-transforming');
+  const host = imgEl.parentElement;
+  if(host){ host.style.position='relative'; }
+  // Flash
+  const flash = document.createElement('div');
+  flash.style.cssText='position:absolute;inset:0;background:radial-gradient(circle,rgba(255,255,120,0.85) 0%,rgba(255,255,120,0) 65%);mix-blend-mode:screen;animation:gxFlash .7s ease-out;pointer-events:none;z-index:50;border-radius:8px';
+  if(host) host.appendChild(flash);
+  if(!document.getElementById('gx-keyframes')){
+    const st=document.createElement('style');st.id='gx-keyframes';st.textContent='@keyframes gxFlash{0%{opacity:0;}10%{opacity:1;}100%{opacity:0;}}@keyframes gxPulse{0%{filter:brightness(1);}50%{filter:brightness(1.25);}100%{filter:brightness(1);}}';document.head.appendChild(st);
+  }
+  setTimeout(()=> flash.remove(),750);
+  setTimeout(()=>{ imgEl.classList.remove('gigamax-transforming'); },800);
+  imgEl.classList.add('gigamax-aura');
+  imgEl.style.transformOrigin='center bottom';
+  imgEl.style.transition='transform .6s ease';
+  imgEl.style.transform='scale(1.18)';
+  // Mise à jour data Pokémon
+  pokemon.nom = pokemon.gigamax.nom;
+  pokemon.type = pokemon.gigamax.type;
+  pokemon.baseAtk = pokemon.gigamax.baseAtk;
+  pokemon.baseDef = pokemon.gigamax.baseDef;
+  imgEl.src = pokemon.gigamax.image;
+  if(isJoueur) nameGaucheSpan.textContent = pokemon.nom; else nameDroiteSpan.textContent = pokemon.nom;
+  enqueue(`<strong>${pokemon.nom}</strong> prend une forme Gigamax !`);
+  // Boost léger spécifique
+  if(isJoueur){
+    stats.gauche.atkStage = Math.min(stats.gauche.atkStage+2,6);
+  } else {
+    stats.droite.atkStage = Math.min(stats.droite.atkStage+2,6);
+  }
+  majBadges();
+  // Remplacer attaques si jeu côté joueur (l'ennemi ne Gigamax pas avec attaques spéciales ici)
+  const table = GIGAMAX_ATTACKS[pokemon.nom];
+  if(table){
+    pokemon.attaques = table.map(a=> ({...a}));
+    configAttaques(cote, pokemon);
+    if(cote==='gauche'){
+      ppState.gauche = pokemon.attaques.map(a=> a.pp || 0);
+    } else {
+      ppState.droite = pokemon.attaques.map(a=> a.pp || 0);
+    }
+  }
+}
+
 function appliquerMega(pokemon, cote){
   if(!pokemon.mega) return;
   const isJoueur = cote==='gauche';
