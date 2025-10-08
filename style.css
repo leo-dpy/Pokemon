@@ -105,6 +105,52 @@ img{max-width:100%;display:block;}
 .mega-inline-btn.hidden{display:none;} 
 .mega-inline-btn:focus-visible{outline:2px solid #5e8dff;outline-offset:3px;}
 
+/* ===================== GIGAMAX ===================== */
+.gigamax-inline-btn{margin-top:4px;position:relative;display:inline-flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(145deg,#431a00,#2d0f00 55%,#5e2600);border:1px solid #9c3d00;color:#ffe6d1;font-weight:700;padding:16px 26px;border-radius:18px;font-size:.8rem;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:background .4s,transform .35s,color .35s,box-shadow .4s;align-self:stretch;isolation:isolate;overflow:hidden;}
+.gigamax-inline-btn:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 30% 25%,rgba(255,170,60,.5),rgba(0,0,0,0) 70%);opacity:.6;pointer-events:none;}
+.gigamax-inline-btn:after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgba(255,255,255,.25),rgba(255,255,255,0) 55%);mix-blend-mode:overlay;opacity:.35;pointer-events:none;}
+.gigamax-inline-btn:hover{background:linear-gradient(145deg,#5f2600,#3a1400 55%,#813400);color:#fff;transform:translateY(-4px) scale(1.03);box-shadow:0 10px 28px -10px rgba(0,0,0,.7),0 0 14px -2px rgba(255,170,60,.55);} 
+.gigamax-inline-btn:active{transform:translateY(-1px) scale(.96);} 
+.gigamax-inline-btn.hidden{display:none;}
+.gigamax-icon{width:26px;height:26px;position:relative;display:inline-block;}
+.gigamax-icon:before,.gigamax-icon:after{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,#ffdf7b,#ff9c0d,#ff3d0d,#ffdf7b);animation:gigaSpin 5s linear infinite;mask:radial-gradient(circle at 50% 50%,transparent 55%,#000 56%);} 
+.gigamax-icon:after{filter:blur(6px);opacity:.5;}
+@keyframes gigaSpin{0%{transform:rotate(0);}100%{transform:rotate(360deg);} }
+.gigamax-text{position:relative;z-index:2;background:linear-gradient(90deg,#ffe6a8,#ffffff);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:1px;}
+
+/* Agrandissement visuel de la forme Gigamax (Pikachu) */
+/* Première version remplacée plus bas */
+.pokemon-img.gigamax-aura{transform:scale(1.3) translateY(-8px);}
+
+/* --- Override: version beaucoup plus grande --- */
+/* Super agrandissement (encore plus) */
+.pokemon-img.gigamax-aura{transform:scale(2.35) translateY(-40px);transform-origin:center bottom;}
+@media (max-width:1550px){
+    .pokemon-img.gigamax-aura{transform:scale(2.15) translateY(-36px);}
+}
+@media (max-width:1250px){
+    .pokemon-img.gigamax-aura{transform:scale(1.9) translateY(-30px);}
+}
+@media (max-width:950px){
+    .pokemon-img.gigamax-aura{transform:scale(1.6) translateY(-22px);} /* mobile */
+}
+@media (max-width:620px){
+    .pokemon-img.gigamax-aura{transform:scale(1.4) translateY(-18px);} /* très petit écran */
+}
+
+/* Transformation Gigamax (agrandissement + éclairs) */
+.gigamax-transform{animation:gigamaxMorph 1.4s ease forwards;position:relative;}
+@keyframes gigamaxMorph{0%{transform:scale(1) translateY(0);filter:brightness(1);}30%{transform:scale(1.25) translateY(-10px);filter:brightness(2) saturate(1.8);}55%{transform:scale(.95) translateY(2px);filter:brightness(.7) saturate(.6);}75%{transform:scale(1.3) translateY(-6px);filter:brightness(2.4) saturate(2);}100%{transform:scale(1.18) translateY(0);filter:brightness(1) saturate(1.1);} }
+.gigamax-aura:after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 35px 10px rgba(255,170,60,.55),0 0 60px 20px rgba(255,60,0,.35);animation:gigamaxPulse 2.2s ease-in-out infinite;pointer-events:none;}
+@keyframes gigamaxPulse{0%,100%{transform:scale(.8);opacity:.85;}50%{transform:scale(1.05);opacity:1;}}
+.gigamax-electric{position:absolute;left:50%;top:50%;width:4px;height:4px;background:#fff;box-shadow:0 0 8px 2px #ffefad,0 0 18px 4px #ff8f2a;border-radius:50%;animation:boltRise 1s ease forwards;}
+@keyframes boltRise{0%{opacity:0;transform:translate(-50%,-50%) scale(.2);}25%{opacity:1;transform:translate(-50%,-180%) scale(1.2);}75%{opacity:.9;transform:translate(-50%,-260%) scale(.7);}100%{opacity:0;transform:translate(-50%,-330%) scale(.2);} }
+.gigamax-electric:before,.gigamax-electric:after{content:"";position:absolute;left:50%;top:50%;width:2px;height:32px;background:linear-gradient(#fff,#ffcf4d);transform:translate(-50%,-50%) rotate(35deg);box-shadow:0 0 6px 2px rgba(255,200,80,.6);} 
+.gigamax-electric:after{transform:translate(-50%,-50%) rotate(-40deg);} 
+.badge-gigamax{background:linear-gradient(135deg,#ffdf7b,#ff3d0d);color:#2b1200;font-weight:800;font-size:0.5rem;padding:3px 8px;border-radius:999px;letter-spacing:1px;box-shadow:0 0 0 1px rgba(255,200,150,.35),0 2px 6px -2px #000;animation:badgeGigaGlow 1.8s ease-in-out infinite;} 
+@keyframes badgeGigaGlow{0%,100%{filter:drop-shadow(0 0 5px #ffbd33);}50%{filter:drop-shadow(0 0 12px #ff620d);} }
+.gigamax-log{color:#ffc573;font-style:italic;}
+
 /* Animation de transformation méga */
 .mega-transforming{position:relative;}
 .mega-transforming:before{content:"";position:absolute;inset:-8px;pointer-events:none;border-radius:50%;background:radial-gradient(circle at 50% 50%,rgba(140,90,255,.65),rgba(0,0,0,0) 70%);filter:blur(6px) brightness(1.3);opacity:0;animation:megaAuraPulse .9s ease forwards;z-index:5;}

@@ -32,6 +32,7 @@ const POKEMONS = {
   },
   pikachu: {
     nom: 'Pikachu', type: 'electrique', image: 'images/pikachu.png', baseAtk: 55, baseDef: 40,
+    gigamax: { nom: 'Pikachu Gigamax', type: 'electrique', image: 'images/pikachu gigamax.png', baseAtk: 85, baseDef: 55 },
     attaques: [
       { nom: 'Éclair', puissance: 25, type: 'electrique', precision: 100, pp: 30 },
       { nom: 'Étincelle', puissance: 30, type: 'electrique', precision: 100, pp: 20 },
@@ -84,6 +85,7 @@ const returnMenuBtn = document.getElementById('return-menu-btn');
 // Bouton méga inline
 const megaBtn = document.getElementById('mega-panel-btn');
 const menuBtn = document.getElementById('menu-btn');
+const gigamaxBtn = document.getElementById('gigamax-panel-btn');
 
 const attaquesGauche = [...document.querySelectorAll('.attaque-gauche > div')];
 const attaquesDroite = [...document.querySelectorAll('.attaque-droite > div')];
@@ -442,6 +444,8 @@ pokemonOptions.forEach(opt=>{
     updateHPBars();
     majBadges();
     if(menuBtn) menuBtn.classList.remove('hidden');
+    if(joueur && joueur.mega){ megaBtn.classList.remove('hidden'); }
+    if(joueur && joueur.gigamax){ gigamaxBtn.classList.remove('hidden'); }
   });
 });
 
@@ -543,6 +547,17 @@ returnMenuBtn && returnMenuBtn.addEventListener('click', ()=>{
 
 let megaDisponible = true;
 let megaUtilisee = false;
+let gigamaxUtilise = false;
+
+// Attaques spéciales Gigamax
+const GIGAMAX_ATTACKS = {
+  'Pikachu Gigamax': [
+    { nom:'Giga-Foudre', puissance:60, type:'electrique', precision:90, pp:5 },
+    { nom:'Tonnerre', puissance:50, type:'electrique', precision:85, pp:10 },
+    { nom:'Queue Éclair', puissance:40, type:'electrique', precision:100, pp:15 },
+    { nom:'Charge Statik', puissance:0, type:'statut', effet:'atk+', precision:100, pp:20 }
+  ]
+};
 
 function appliquerMega(pokemon, cote){
   if(!pokemon.mega) return;
@@ -605,6 +620,16 @@ megaBtn.addEventListener('click', ()=>{
   appliquerMega(joueur, 'gauche');
 });
 
+// Bouton Gigamax
+if(gigamaxBtn){
+  gigamaxBtn.addEventListener('click', ()=>{
+    if(!joueur || gigamaxUtilise || !joueur.gigamax) return;
+    gigamaxUtilise = true;
+    gigamaxBtn.classList.add('hidden');
+    appliquerGigamax(joueur, 'gauche');
+  });
+}
+
 // Surcharge fonction configAttaques pour gérer nouveaux effets
 const oldConfigAttaques = configAttaques;
 configAttaques = function(colonne, pokemon){
@@ -644,6 +669,7 @@ const oldFin = finDePartie;
 finDePartie = function(message){
   oldFin(message);
   megaBtn.classList.add('hidden');
+  if(gigamaxBtn) gigamaxBtn.classList.add('hidden');
 };
 
 // Ajout fonctions supplémentaires méga
@@ -710,6 +736,12 @@ function afterAction(){
       const b=document.createElement('div');b.className='badge-mega';b.textContent='MEGA';cont.prepend(b);
     }
   }
+  if(joueur && joueur.nom && joueur.nom.includes('Gigamax')){
+    const cont = document.getElementById('badges-gauche');
+    if(cont && !cont.querySelector('.badge-gigamax')){
+      const b=document.createElement('div');b.className='badge-gigamax';b.textContent='GIGA';cont.prepend(b);
+    }
+  }
 }
 window.afterAction = afterAction;
 
@@ -743,6 +775,59 @@ appliquerMega = function(pokemon, cote){
     if(step>2) clearInterval(interval);
   }, 600);
   enqueue(`<div class='mega-log'><em>La puissance de ${pokemon.nom} monte en flèche !</em></div>`);
+};
+
+// ================= Gigamax ===================
+function appliquerGigamax(pokemon, cote){
+  if(!pokemon.gigamax) return;
+  const isJoueur = cote==='gauche';
+  const imgEl = isJoueur ? imgGauche : imgDroite;
+  imgEl.classList.add('gigamax-transform');
+  setTimeout(()=>{ imgEl.classList.remove('gigamax-transform'); imgEl.classList.add('gigamax-aura'); },1400);
+  const host = imgEl.parentElement;
+  if(host){
+    for(let i=0;i<8;i++){
+      setTimeout(()=>{
+        const bolt=document.createElement('div');
+        bolt.className='gigamax-electric';
+        host.style.position='relative';
+        host.appendChild(bolt);
+        setTimeout(()=> bolt.remove(), 1000);
+      }, i*120);
+    }
+  }
+  pokemon.nom = pokemon.gigamax.nom;
+  pokemon.type = pokemon.gigamax.type;
+  pokemon.baseAtk = pokemon.gigamax.baseAtk;
+  pokemon.baseDef = pokemon.gigamax.baseDef;
+  imgEl.src = pokemon.gigamax.image;
+  if(isJoueur) nameGaucheSpan.textContent = pokemon.nom; else nameDroiteSpan.textContent = pokemon.nom;
+  enqueue(`<span class='gigamax-log'><strong>${pokemon.nom}</strong> libère son pouvoir Gigamax !</span>`);
+  const side = cote==='gauche'? 'gauche':'droite';
+  let avant = side==='gauche'? hpGauche: hpDroite;
+  const bonus = Math.min(100-avant, 30);
+  if(bonus>0){ if(side==='gauche') hpGauche += bonus; else hpDroite += bonus; updateHPBars({healSide: side}); enqueue(`<em>${pokemon.nom} gagne ${bonus} PV sous forme d'énergie Gigamax !</em>`); }
+  if(GIGAMAX_ATTACKS[pokemon.nom]){ pokemon.attaques = GIGAMAX_ATTACKS[pokemon.nom]; configAttaques(side, pokemon); }
+  if(side==='gauche'){ stats.gauche.atkStage = Math.min(stats.gauche.atkStage+1,6); stats.gauche.defStage = Math.min(stats.gauche.defStage+1,6); }
+  else { stats.droite.atkStage = Math.min(stats.droite.atkStage+1,6); stats.droite.defStage = Math.min(stats.droite.defStage+1,6); }
+  majBadges();
+}
+
+// Paralysie simple sur Giga-Foudre (30% chance d'annuler prochaine attaque ennemie)
+const oldAttaque2 = attaque;
+attaque = function(sourceColonne, elementAttaque){
+  if(sourceColonne==='droite' && ennemi && ennemi.__paralyseTour){
+    enqueue(`<em>${ennemi.nom} est paralysé et ne peut pas attaquer !</em>`);
+    delete ennemi.__paralyseTour;
+    return;
+  }
+  oldAttaque2(sourceColonne, elementAttaque);
+  if(sourceColonne==='gauche' && elementAttaque && elementAttaque.textContent==='Giga-Foudre'){
+    if(Math.random()<0.3 && ennemi && hpDroite>0){
+      ennemi.__paralyseTour = true;
+      enqueue(`<em>${ennemi.nom} est paralysé par l'électricité gigantesque !</em>`);
+    }
+  }
 };
 
 
