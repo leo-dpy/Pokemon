@@ -1081,6 +1081,14 @@ appliquerMega = function(pokemon, cote){
   if(MEGA_NEW_ATTACKS[pokemon.nom]){
     pokemon.attaques = MEGA_NEW_ATTACKS[pokemon.nom];
     configAttaques(cote==='gauche'?'gauche':'droite', pokemon);
+    // Récupérer le max PP pour chaque attaque nouvellement acquise
+    const attaquesDivs = cote==='gauche' ? attaquesGauche : attaquesDroite;
+    attaquesDivs.forEach((div, i) => {
+      if(pokemon.attaques[i] && typeof pokemon.attaques[i].pp !== 'undefined') {
+        div.dataset.pprestant = pokemon.attaques[i].pp;
+        majLibelleAttaque(div);
+      }
+    });
   }
   // Soins bonus lors de la méga-évolution
   const side = cote==='gauche' ? 'gauche' : 'droite';
@@ -1144,6 +1152,16 @@ function appliquerGigamax(pokemon, cote){
   const bonus = side==='droite' ? Math.min(100-avant, 15) : Math.min(100-avant, 30);
   if(bonus>0){ if(side==='gauche') hpGauche += bonus; else hpDroite += bonus; updateHPBars({healSide: side}); enqueue(`<em>${pokemon.nom} gagne ${bonus} PV sous forme d'énergie Gigamax !</em>`); }
   if(GIGAMAX_ATTACKS[pokemon.nom]){ pokemon.attaques = GIGAMAX_ATTACKS[pokemon.nom]; configAttaques(side, pokemon); }
+  // Récupérer le max PP pour chaque attaque nouvellement acquise
+  if(GIGAMAX_ATTACKS[pokemon.nom]){
+    const attaquesDivs = side==='gauche' ? attaquesGauche : attaquesDroite;
+    attaquesDivs.forEach((div, i) => {
+      if(pokemon.attaques[i] && typeof pokemon.attaques[i].pp !== 'undefined') {
+        div.dataset.pprestant = pokemon.attaques[i].pp;
+        majLibelleAttaque(div);
+      }
+    });
+  }
   if(side==='gauche'){
     stats.gauche.atkStage = Math.min(stats.gauche.atkStage+1,6);
     stats.gauche.defStage = Math.min(stats.gauche.defStage+1,6);
@@ -1169,5 +1187,19 @@ attaque = function(sourceColonne, elementAttaque){
     }
   }
 };
+
+// Annulation de la sélection PP via touche Échap
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape' && ppSelectionActive){
+    if(typeof window.__ppSelectCancel === 'function'){
+      window.__ppSelectCancel();
+    } else {
+      // Nettoyage manuel de secours
+      attaquesGauche.forEach(d2=>{ d2.classList.remove('pp-selectable'); d2.style.outline=''; d2.style.cursor=''; });
+      ppSelectionActive = false;
+      enqueue('<em>Sélection PP annulée.</em>');
+    }
+  }
+});
 
 
