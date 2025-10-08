@@ -71,45 +71,71 @@ button {
     z-index: 1;
 }
 
-.top-bar .menu-btn {
-    position: absolute;
+/* Boutons flottants en haut */
+.floating-buttons {
+    position: fixed;
+    top: 32px;
+    left: 0;
     right: 0;
-    top: 50%;
-    transform: translateY(-50%);
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px;
+    pointer-events: none;
+    z-index: 1000;
 }
 
-.menu-btn {
-    margin-left: auto;
-    background: rgba(255, 255, 255, 0.05);
+.floating-btn {
+    pointer-events: auto;
+    background: rgba(22, 27, 34, 0.95);
     color: #b9c6d6;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    padding: 6px 14px;
-    font-size: .6rem;
+    padding: 10px 16px;
+    font-size: .65rem;
     letter-spacing: .8px;
-    border-radius: 10px;
+    border-radius: 12px;
     cursor: pointer;
     text-transform: uppercase;
     font-weight: 600;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    backdrop-filter: blur(3px);
-    transition: background .3s, border-color .3s, color .3s, transform .25s, box-shadow .35s;
+    gap: 8px;
+    backdrop-filter: blur(8px);
+    transition: all .3s ease;
+    box-shadow: 0 4px 16px -6px rgba(0, 0, 0, .4);
 }
 
-.menu-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
-    box-shadow: 0 4px 14px -6px rgba(0, 0, 0, .6);
+.floating-btn:hover {
+    background: rgba(40, 49, 60, 0.95);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px -8px rgba(0, 0, 0, .6);
 }
 
-.menu-btn:active {
+.floating-btn:active {
     transform: translateY(1px) scale(.97);
 }
 
-.menu-btn.hidden {
-    display: none;
+.floating-btn.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-10px);
 }
+
+.shop-btn.floating-btn {
+    background: rgba(255, 203, 5, 0.12);
+    color: #ffcb05;
+    border-color: rgba(255, 203, 5, 0.25);
+}
+
+.shop-btn.floating-btn:hover {
+    background: rgba(255, 203, 5, 0.2);
+    border-color: rgba(255, 203, 5, 0.4);
+}
+
+.shop-icon {
+    font-size: 0.9rem;
+}
+
+
 
 /* Bouton Sac inline (style similaire méga / gigamax) */
 .bag-inline-btn {
@@ -418,6 +444,149 @@ button {
 }
 
 .bag-item-desc {
+    font-size: .6rem;
+}
+
+/* Styles PokéShop - similaires au sac */
+#shop-overlay {
+    backdrop-filter: blur(4px);
+}
+
+.shop-box {
+    width: 500px;
+    max-width: 94vw;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 8px 28px -10px rgba(0, 0, 0, .65);
+}
+
+.shop-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.shop-header h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-family: 'Fredoka', 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+    color: var(--accent);
+}
+
+.shop-currency {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: rgba(255, 203, 5, 0.1);
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 203, 5, 0.2);
+}
+
+.pokecoin-icon {
+    font-size: 1rem;
+}
+
+.close-shop {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #d4dce7;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-shop:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.shop-hint {
+    margin: 0 0 4px;
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    color: var(--text-dim);
+}
+
+.shop-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.shop-item {
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    padding: 12px 14px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    cursor: pointer;
+    position: relative;
+    min-height: 90px;
+    transition: background .25s, border-color .25s, transform .25s, box-shadow .25s;
+}
+
+.shop-item:hover {
+    background: #28313c;
+    box-shadow: 0 4px 14px -8px rgba(0, 0, 0, .55);
+    border-color: rgba(255, 203, 5, 0.3);
+}
+
+.shop-item:active {
+    transform: scale(.95);
+}
+
+.shop-item.disabled {
+    opacity: .35;
+    cursor: not-allowed;
+}
+
+.shop-item-title {
+    font-size: .8rem;
+    font-weight: 600;
+    letter-spacing: .5px;
+    color: #fff;
+}
+
+.shop-item-desc {
+    font-size: .65rem;
+    color: var(--text-dim);
+    line-height: 1.3;
+}
+
+.shop-item-price {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: .7rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-top: auto;
+}
+
+.shop-footer {
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+}
+
+.shop-info {
     font-size: .6rem;
     line-height: 1.2;
     color: var(--text-dim);

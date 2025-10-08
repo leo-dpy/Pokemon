@@ -91,6 +91,12 @@ const bagOverlay = document.getElementById('bag-overlay');
 const bagItemsContainer = document.getElementById('bag-items');
 const closeBagBtn = document.getElementById('close-bag-btn');
 const bagInfo = document.getElementById('bag-info');
+const shopBtn = document.getElementById('shop-btn');
+const shopOverlay = document.getElementById('shop-overlay');
+const shopItemsContainer = document.getElementById('shop-items');
+const closeShopBtn = document.getElementById('close-shop-btn');
+const shopInfo = document.getElementById('shop-info');
+const shopCurrencyAmount = document.getElementById('shop-currency-amount');
 
 const attaquesGauche = [...document.querySelectorAll('.attaque-gauche > div')];
 const attaquesDroite = [...document.querySelectorAll('.attaque-droite > div')];
@@ -380,6 +386,15 @@ function finDePartie(message){
   [...attaquesGauche,...attaquesDroite].forEach(b=> b.style.pointerEvents='none');
   restartBtn.classList.remove('hidden');
   combatTermine = true;
+  
+  // Récompense en PokéPièces si victoire
+  if(message.includes('Tu gagnes')){
+    const recompense = Math.floor(Math.random() * 20) + 15; // 15-34 PokéPièces
+    pokepieces += recompense;
+    enqueue(`<em style="color: #ffcb05;">+${recompense} PokéPièces gagnées !</em>`);
+    updateShopCurrency();
+  }
+  
   if(endMessage){
     endMessage.style.display = 'block';
     endMessage.classList.remove('win','lose');
@@ -549,6 +564,7 @@ pokemonOptions.forEach(opt=>{
     majBadges();
     if(menuBtn) menuBtn.classList.remove('hidden');
   if(bagBtn) bagBtn.classList.remove('hidden');
+  if(shopBtn) shopBtn.classList.remove('hidden');
   tour = 1; phase='player'; majIndicateurTour();
   verrouillerAttaques(false);
     
@@ -635,6 +651,7 @@ function resetCombat(){
   imgDroite.classList.remove('mega-flash','mega-aura','gigamax-aura');
   megaBtn.classList.add('hidden'); gigamaxBtn.classList.add('hidden'); restartBtn.classList.add('hidden');
   bagBtn && bagBtn.classList.add('hidden');
+  shopBtn && shopBtn.classList.add('hidden');
   megaBtn.classList.remove('disabled'); gigamaxBtn.classList.remove('disabled');
   megaBtn.disabled = false; gigamaxBtn.disabled = false;
   updateHPBars();
@@ -680,6 +697,17 @@ const INVENTAIRE = {
 };
 // Snapshot inventaire (placé après la déclaration pour éviter ReferenceError)
 const __BASE_INVENTAIRE = JSON.parse(JSON.stringify(INVENTAIRE));
+
+// ================= PokéShop & PokéPièces =================
+let pokepieces = 0;
+
+const SHOP_ITEMS = {
+  potion: { id:'potion', nom:'Potion', desc:'+20 PV', prix:15 },
+  superPotion: { id:'superPotion', nom:'Super Potion', desc:'+40 PV', prix:25 },
+  potionPP: { id:'potionPP', nom:'Potion PP', desc:'+5 PP à une attaque', prix:20 },
+  elixir: { id:'elixir', nom:'Élixir', desc:'Restaure tous les PP d\'une attaque', prix:35 },
+  maxPotion: { id:'maxPotion', nom:'Max Potion', desc:'PV à 100%', prix:50 }
+};
 
 function renderInventaire(){
   if(!bagItemsContainer) return;
@@ -795,6 +823,79 @@ bagBtn && bagBtn.addEventListener('click', ()=>{
 });
 closeBagBtn && closeBagBtn.addEventListener('click', ()=> fermerSac());
 bagOverlay && bagOverlay.addEventListener('click', e=>{ if(e.target===bagOverlay) fermerSac(); });
+
+// ================= Gestion PokéShop =================
+function renderShop(){
+  if(!shopItemsContainer) return;
+  shopItemsContainer.innerHTML='';
+  Object.values(SHOP_ITEMS).forEach(obj=>{
+    const div=document.createElement('div');
+    const canAfford = pokepieces >= obj.prix;
+    div.className='shop-item'+(canAfford ? '' : ' disabled');
+    div.innerHTML = `
+      <span class="shop-item-title">${obj.nom}</span>
+      <span class="shop-item-desc">${obj.desc}</span>
+      <span class="shop-item-price">
+        <span class="pokecoin-icon">⚡</span>
+        ${obj.prix} PokéPièces
+      </span>
+    `;
+    if(canAfford) {
+      div.addEventListener('click', ()=> acheterObjet(obj));
+    }
+    shopItemsContainer.appendChild(div);
+  });
+}
+
+function ouvrirShop(){
+  if(!joueur || combatTermine) return;
+  renderShop();
+  updateShopCurrency();
+  shopOverlay.style.display='flex';
+  shopOverlay.classList.add('show');
+  shopInfo.textContent='Sélectionne un objet à acheter.';
+}
+
+function fermerShop(){
+  shopOverlay.style.display='none';
+  shopOverlay.classList.remove('show');
+}
+
+function updateShopCurrency(){
+  if(shopCurrencyAmount) shopCurrencyAmount.textContent = pokepieces;
+}
+
+function acheterObjet(shopItem){
+  if(pokepieces < shopItem.prix) {
+    shopInfo.textContent = 'Pas assez de PokéPièces !';
+    return;
+  }
+  
+  // Déduire le prix
+  pokepieces -= shopItem.prix;
+  updateShopCurrency();
+  
+  // Ajouter l'objet à l'inventaire
+  if(INVENTAIRE[shopItem.id]) {
+    INVENTAIRE[shopItem.id].qty += 1;
+  }
+  
+  renderShop(); // Rafraîchir l'affichage du shop
+  shopInfo.textContent = `${shopItem.nom} acheté ! Ajouté au sac.`;
+  
+  // Flash de confirmation
+  setTimeout(() => {
+    if(shopInfo.textContent === `${shopItem.nom} acheté ! Ajouté au sac.`) {
+      shopInfo.textContent = 'Sélectionne un objet à acheter.';
+    }
+  }, 2000);
+}
+
+shopBtn && shopBtn.addEventListener('click', ()=>{
+  if(shopOverlay.style.display==='flex') fermerShop(); else ouvrirShop();
+});
+closeShopBtn && closeShopBtn.addEventListener('click', ()=> fermerShop());
+shopOverlay && shopOverlay.addEventListener('click', e=>{ if(e.target===shopOverlay) fermerShop(); });
 
 // Fonction pour mettre à jour l'état des boutons de transformation
 function updateTransformationButtons() {

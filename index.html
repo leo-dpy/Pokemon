@@ -49,7 +49,6 @@
   <div class="battle-shell">
     <header class="top-bar">
       <h1 class="app-title">Pokémon Battle</h1>
-  <button id="menu-btn" class="menu-btn hidden" title="Retour au menu">Menu</button>
     </header>
     <div class="conteneur battle-grid">
       <div class="gauche panel">
@@ -132,6 +131,34 @@
         <small class="bag-info" id="bag-info">&nbsp;</small>
       </div>
     </div>
+  </div>
+
+  <!-- Overlay PokéShop -->
+  <div id="shop-overlay" class="overlay" style="display:none;">
+    <div class="shop-box">
+      <div class="shop-header">
+        <h2>PokéShop</h2>
+        <div class="shop-currency">
+          <span class="pokecoin-icon">⚡</span>
+          <span id="shop-currency-amount">0</span> PokéPièces
+        </div>
+        <button id="close-shop-btn" class="close-shop" title="Fermer">×</button>
+      </div>
+      <p class="shop-hint">Achète des objets avec tes PokéPièces gagnées en combat !</p>
+      <div id="shop-items" class="shop-items"></div>
+      <div class="shop-footer">
+        <small class="shop-info" id="shop-info">&nbsp;</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Boutons flottants en haut -->
+  <div class="floating-buttons">
+    <button id="shop-btn" class="floating-btn shop-btn hidden" title="Ouvrir le PokéShop">
+      <span class="shop-icon">🛒</span>
+      <span class="shop-text">Shop</span>
+    </button>
+    <button id="menu-btn" class="floating-btn menu-btn hidden" title="Retour au menu">Menu</button>
   </div>
 
   <script src="index.js"></script>
