@@ -49,7 +49,7 @@
   <div class="battle-shell">
     <header class="top-bar">
       <h1 class="app-title">Pokémon Battle</h1>
-      <button id="menu-btn" class="menu-btn hidden" title="Retour au menu">Menu</button>
+  <button id="menu-btn" class="menu-btn hidden" title="Retour au menu">Menu</button>
     </header>
     <div class="conteneur battle-grid">
       <div class="gauche panel">
@@ -71,6 +71,10 @@
           <div class="attaque3-gauche" data-degat="0" data-type="statut">---</div>
           <div class="attaque4-gauche" data-degat="0" data-type="plante">---</div>
         </div>
+          <button id="bag-btn" class="bag-inline-btn hidden" title="Ouvrir le sac (objets)">
+            <span class="bag-icon" aria-hidden="true"></span>
+            <span class="bag-text">Sac</span>
+          </button>
         <button id="mega-panel-btn" class="mega-inline-btn hidden" title="Méga-évoluer (une seule fois)">
           <span class="mega-icon" aria-hidden="true"></span>
           <span class="mega-text">Méga-Évolution</span>
@@ -112,6 +116,21 @@
     <div class="end-box">
       <h2 id="end-message">Fin du combat</h2>
       <button id="return-menu-btn">Retour au menu</button>
+    </div>
+  </div>
+
+  <!-- Overlay Sac / Inventaire -->
+  <div id="bag-overlay" class="overlay" style="display:none;">
+    <div class="bag-box">
+      <div class="bag-header">
+        <h2>Sac</h2>
+        <button id="close-bag-btn" class="close-bag" title="Fermer">×</button>
+      </div>
+      <p class="bag-hint">Choisis un objet à utiliser sur ton Pokémon.</p>
+      <div id="bag-items" class="bag-items"></div>
+      <div class="bag-footer">
+        <small class="bag-info" id="bag-info">&nbsp;</small>
+      </div>
     </div>
   </div>
 

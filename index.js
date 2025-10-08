@@ -86,9 +86,15 @@ const returnMenuBtn = document.getElementById('return-menu-btn');
 const megaBtn = document.getElementById('mega-panel-btn');
 const menuBtn = document.getElementById('menu-btn');
 const gigamaxBtn = document.getElementById('gigamax-panel-btn');
+const bagBtn = document.getElementById('bag-btn');
+const bagOverlay = document.getElementById('bag-overlay');
+const bagItemsContainer = document.getElementById('bag-items');
+const closeBagBtn = document.getElementById('close-bag-btn');
+const bagInfo = document.getElementById('bag-info');
 
 const attaquesGauche = [...document.querySelectorAll('.attaque-gauche > div')];
 const attaquesDroite = [...document.querySelectorAll('.attaque-droite > div')];
+// Indicateur de tour supprimé volontairement
 
 // --- Etat Combat ---
 let joueur = null;
@@ -103,6 +109,10 @@ let ppState = { gauche: [], droite: [] };
 let actionQueue = [];
 let processing = false;
 let combatTermine = false;
+let tour = 1;
+let phase = 'player'; // 'player' ou 'enemy'
+// Indicateur global de mode sélection PP (empêche lancement d'attaque)
+let ppSelectionActive = false;
 
 // Sons désactivés
 function playTone(){}
@@ -189,6 +199,15 @@ function updateHPBars(options={}){
   hpLabelGauche.textContent = `PV: ${hpGauche} / 100`;
   hpLabelDroite.textContent = `PV: ${hpDroite} / 100`;
 }
+
+function majIndicateurTour(){ /* indicateur supprimé */ }
+
+function verrouillerAttaques(lock){
+  attaquesGauche.forEach(div=>{
+    div.style.pointerEvents = lock? 'none':'auto';
+    div.style.opacity = lock? .55 : '';
+  });
+}
 function animeEntree(imgEl){
   imgEl.classList.remove('hidden');
   imgEl.classList.add('enter-from-ball');
@@ -236,7 +255,7 @@ function majBadges(){
   const d = document.getElementById('badges-droite');
   g.innerHTML=''; d.innerHTML='';
   Object.entries(map).forEach(([k,label])=>{
-    const valG = stats.gauche[k];
+    const valG = stats.gauche[k] || 0;
     if(valG!==0){
       const b=document.createElement('div');
       b.className='stat-badge ' + (valG>0?'up':'down');
@@ -257,18 +276,102 @@ function configAttaques(colonne, pokemon){
   const cont = colonne === 'gauche' ? attaquesGauche : attaquesDroite;
   cont.forEach((div,i)=>{
     const att = pokemon.attaques[i];
-    if(!att){div.textContent='---';div.dataset.degat=0;div.dataset.type='normal';div.classList.add('disabled');return;}
-    div.textContent = att.nom;
+    if(!att){
+      div.textContent='---';
+      div.dataset.degat=0;div.dataset.type='normal';
+      div.removeAttribute('data-precision');
+      div.removeAttribute('data-effet');
+      div.removeAttribute('data-pp');
+      div.removeAttribute('data-pprestant');
+      div.removeAttribute('data-originalname');
+      div.classList.add('disabled');
+      return;
+    }
+    div.classList.remove('disabled');
+    div.dataset.originalname = att.nom;
     div.dataset.degat = att.puissance;
     div.dataset.type = att.type;
-    if(att.precision) div.dataset.precision = att.precision;
-    if(att.effet) div.dataset.effet = att.effet;
-    if(att.pp){ div.dataset.pp = att.pp; div.dataset.pprestant = att.pp; div.title = `PP ${att.pp}/${att.pp}`; }
-    // Marquer les attaques de statut pour aide visuelle / debug futur
-    if(att.puissance === 0){
-      div.classList.add('is-status');
+    if(att.precision) div.dataset.precision = att.precision; else div.removeAttribute('data-precision');
+    if(att.effet) div.dataset.effet = att.effet; else div.removeAttribute('data-effet');
+    if(att.pp){
+      div.dataset.pp = att.pp;
+      // Si on reconfigure (après méga/gigamax) conserver pprest si déjà là sinon reset
+      if(!div.dataset.pprestant || parseInt(div.dataset.pprestant,10) > att.pp){
+        div.dataset.pprestant = att.pp;
+      }
+      div.title = `PP ${div.dataset.pprestant}/${att.pp}`;
     } else {
-      div.classList.remove('is-status');
+      div.removeAttribute('data-pp');
+      div.removeAttribute('data-pprestant');
+      div.title = att.nom;
+    }
+    if(att.puissance === 0){ div.classList.add('is-status'); } else { div.classList.remove('is-status'); }
+    // Mise à jour libellé formaté
+  div.innerHTML = formaterLibelleAttaque(div);
+  appliquerColorationDegats(div);
+  });
+}
+
+function formaterLibelleAttaque(div){
+  const nom = div.dataset.originalname || div.textContent || '---';
+  const puissanceBrute = parseInt(div.dataset.degat || '0',10);
+  const estStatus = puissanceBrute<=0;
+  const ppTotal = div.dataset.pp;
+  const ppRest = div.dataset.pprestant;
+  let blocPP = '';
+  if(ppTotal){ blocPP = `${ppRest}/${ppTotal}`; }
+  let predTxt = '—';
+  if(!estStatus){
+    const side = attaquesGauche.includes(div)? 'gauche':'droite';
+    const attaquant = side==='gauche'? joueur : ennemi;
+    const defenseur = side==='gauche'? ennemi : joueur;
+    if(attaquant && defenseur){
+      const atkStat = attaquant.baseAtk * stageToMult(stats[side].atkStage);
+      const defStat = defenseur.baseDef * stageToMult(stats[side==='gauche'?'droite':'gauche'].defStage);
+  // Facteur global d'équilibrage des dégâts (augmenté de 1.8 à 2.1)
+  let base = (atkStat / defStat) * (puissanceBrute / 10) * 2.1;
+      const cibleType = defenseur.types || defenseur.type;
+      const multType = calculMultiplicateur(div.dataset.type, cibleType);
+      base *= multType;
+      const min = Math.max(1, Math.round(base * 0.85));
+      const max = Math.max(1, Math.round(base));
+      predTxt = min===max? `${max}` : `${min}-${max}`;
+      div.dataset.predmindmg = min;
+      div.dataset.predmaxdmg = max;
+    } else {
+      predTxt = puissanceBrute>0? puissanceBrute.toString():'—';
+      div.dataset.predmindmg = puissanceBrute;
+      div.dataset.predmaxdmg = puissanceBrute;
+    }
+  } else {
+    delete div.dataset.predmindmg; delete div.dataset.predmaxdmg;
+  }
+  return `\n    <div class="attk-wrapper">\n      <div class="attk-line">\n        <span class="attk-name">${nom}</span>\n      </div>\n      <div class="attk-meta">\n        <span class="attk-dmg" data-dmg="${estStatus? '-': div.dataset.predmaxdmg || puissanceBrute}">${predTxt} dmg</span>\n        <span class="attk-sep">•</span>\n        <span class="attk-pp">${blocPP? blocPP+' PP':'∞'}</span>\n      </div>\n    </div>\n  `;
+}
+
+function majLibelleAttaque(div){
+  if(!div || !div.dataset) return;
+  if(div.dataset.pp){ div.title = `PP ${div.dataset.pprestant}/${div.dataset.pp}`; }
+  div.innerHTML = formaterLibelleAttaque(div);
+  appliquerColorationDegats(div);
+}
+
+function appliquerColorationDegats(div){
+  const dmgSpan = div.querySelector('.attk-dmg');
+  if(!dmgSpan) return;
+  const val = parseInt(div.dataset.predmaxdmg || dmgSpan.dataset.dmg || '0',10);
+  dmgSpan.classList.remove('dmg-low','dmg-mid','dmg-high');
+  if(isNaN(val) || val<=0){ return; }
+  if(val < 20) dmgSpan.classList.add('dmg-low');
+  else if(val < 40) dmgSpan.classList.add('dmg-mid');
+  else dmgSpan.classList.add('dmg-high');
+}
+
+function updateDisplayedDamages(){
+  [...attaquesGauche, ...attaquesDroite].forEach(div=>{
+    if(div.dataset && div.dataset.degat){
+      div.innerHTML = formaterLibelleAttaque(div) || '';
+      appliquerColorationDegats(div);
     }
   });
 }
@@ -322,12 +425,13 @@ function attaque(sourceColonne, elementAttaque){
   let ppRestant = parseInt(elementAttaque.dataset.pprestant || '0',10);
   if(puissance>=0 && elementAttaque.dataset.pp){
     if(ppRestant<=0){
-  enqueue(`<span class="type type-${type}">${type}</span>${attaquant.nom} n'a plus de PP pour ${elementAttaque.textContent}!`);
+  enqueue(`<span class="type type-${type}">${type}</span>${attaquant.nom} n'a plus de PP pour ${elementAttaque.dataset.originalname || 'son attaque'}!`);
       return;
     }
     ppRestant -= 1; elementAttaque.dataset.pprestant = ppRestant;
     elementAttaque.title = `PP ${ppRestant}/${elementAttaque.dataset.pp}`;
     if(ppRestant===0) elementAttaque.style.opacity=.35;
+  majLibelleAttaque(elementAttaque);
   }
 
   // Précision
@@ -335,7 +439,7 @@ function attaque(sourceColonne, elementAttaque){
   const evaMult = stageToMult(stats[oppSide].evaStage);
   const precisionEffective = Math.min(100, Math.max(1, Math.round(precisionBase * accMult / evaMult)));
   if(Math.random()*100 > precisionEffective){
-  enqueue(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> utilise <em>${elementAttaque.textContent}</em> mais échoue ! (Précision ${precisionEffective}%)`);
+  enqueue(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> utilise <em>${elementAttaque.dataset.originalname || 'une attaque'}</em> mais échoue ! (Précision ${precisionEffective}%)`);
     return;
   }
 
@@ -344,8 +448,8 @@ function attaque(sourceColonne, elementAttaque){
   if(puissance > 0){
     atkStat = attaquant.baseAtk * stageToMult(stats[side].atkStage);
     defStat = defenseur.baseDef * stageToMult(stats[oppSide].defStage);
-    // Augmentation dégâts: multiplier base par 1.8
-    base = (atkStat / defStat) * (puissance / 10) * 1.8;
+  // Facteur global d'équilibrage des dégâts (augmenté de 1.8 à 2.1)
+  base = (atkStat / defStat) * (puissance / 10) * 2.1;
     variance = 0.85 + Math.random()*0.15;
     critique = Math.random() < 0.0625; // 6.25%
     critMult = critique ? 1.5 : 1;
@@ -388,11 +492,11 @@ function attaque(sourceColonne, elementAttaque){
       }
     }
     majBadges();
-  enqueue(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> lance <em>${elementAttaque.textContent}</em>. ${texteEffet}`);
+  enqueue(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> lance <em>${elementAttaque.dataset.originalname || 'une attaque'}</em>. ${texteEffet}`);
   } else {
     popupDegats(oppSide, degats, critique);
     let critTxt = critique ? ' <span class="super-efficace">Coup critique !</span>' : '';
-  enqueue(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> utilise <em>${elementAttaque.textContent}</em> inflige ${degats} dégâts. ${feedback}${critTxt}`);
+  enqueue(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> utilise <em>${elementAttaque.dataset.originalname || 'une attaque'}</em> inflige ${degats} dégâts. ${feedback}${critTxt}`);
     if(elementAttaque.dataset.effet==='leech' && degats>0){
       const avant = side==='gauche'? hpGauche: hpDroite;
       const soin = Math.min(100 - avant, Math.max(1, Math.round(degats*0.5)));
@@ -444,29 +548,60 @@ pokemonOptions.forEach(opt=>{
     updateHPBars();
     majBadges();
     if(menuBtn) menuBtn.classList.remove('hidden');
-    if(joueur && joueur.mega){ megaBtn.classList.remove('hidden'); }
-    if(joueur && joueur.gigamax){ gigamaxBtn.classList.remove('hidden'); }
+  if(bagBtn) bagBtn.classList.remove('hidden');
+  tour = 1; phase='player'; majIndicateurTour();
+  verrouillerAttaques(false);
+    
+    // Gestion des boutons Méga-évolution et Gigamax
+    updateTransformationButtons();
   });
 });
 
 // Attaques joueur
 attaquesGauche.forEach(div=>{
   div.addEventListener('click', function(){
+    if(ppSelectionActive) return; // En mode sélection PP: ignorer exécution d'attaque
     if(!joueur || hpDroite<=0 || hpGauche<=0) return;
+    if(phase!=='player') return; // empêcher clic hors tour joueur
     attaque('gauche', this);
+    // Fin de phase joueur -> passer phase ennemi après petit délai
     if(hpDroite>0 && hpGauche>0){
-      setTimeout(()=>{
-        const candidates = ennemi.attaques.filter(a=> a.puissance>0 || a.type==='statut');
-        const choix = candidates[Math.floor(Math.random()*candidates.length)];
-        const idx = ennemi.attaques.findIndex(a=> a.nom===choix.nom);
-        if(idx>=0){
-          const divAtt = attaquesDroite[idx];
-          if(divAtt) attaque('droite', divAtt);
-        }
-      }, 650);
+  phase='enemy'; majIndicateurTour(); verrouillerAttaques(true);
+      setTimeout(()=>{ tourEnemySequence(); }, 750);
     }
   });
 });
+
+// Exécuter l'action choisie par l'IA de l'ennemi
+function executerActionEnnemi() {
+  const decision = decisionEnnemi();
+  if (!decision) { ennemiTours++; return; }
+  if (decision.type === 'mega') {
+    ennemiMegaUtilisee = true;
+    ennemi.__mega = true;
+    appliquerMega(ennemi, 'droite');
+  } else if (decision.type === 'gigamax') {
+    ennemiGigamaxUtilise = true;
+    ennemi.__gigamax = true;
+    appliquerGigamax(ennemi, 'droite');
+  } else if (decision.type === 'attaque') {
+    const divAtt = attaquesDroite[decision.index];
+    if (divAtt) attaque('droite', divAtt);
+  }
+  ennemiTours++;
+}
+
+function tourEnemySequence(){
+  if(combatTermine) return;
+  // Une seule action pour l'ennemi
+  executerActionEnnemi();
+  // Attendre la file puis repasser au joueur
+  setTimeout(()=>{
+    if(!combatTermine && hpGauche>0 && hpDroite>0){
+  phase='player'; tour++; majIndicateurTour(); verrouillerAttaques(false);
+    }
+  }, 900);
+}
 
 attaquesDroite.forEach(d=> d.style.pointerEvents='none');
 
@@ -478,7 +613,8 @@ const __BASE_POKEMONS = JSON.parse(JSON.stringify(POKEMONS));
 function resetCombat(){
   // Restaurer POKEMONS
   Object.keys(__BASE_POKEMONS).forEach(k=> POKEMONS[k] = JSON.parse(JSON.stringify(__BASE_POKEMONS[k])));
-  joueur=null; ennemi=null; hpGauche=100; hpDroite=100; combatTermine=false; megaUtilisee=false; processing=false; actionQueue=[];
+  joueur=null; ennemi=null; hpGauche=100; hpDroite=100; combatTermine=false; megaUtilisee=false; gigamaxUtilise=false; 
+  ennemiMegaUtilisee=false; ennemiGigamaxUtilise=false; processing=false; actionQueue=[];
   stats = { gauche:{atkStage:0,defStage:0,accStage:0,evaStage:0}, droite:{atkStage:0,defStage:0,accStage:0,evaStage:0} };
   ppState = { gauche:[], droite:[] };
   // Effacer log et interface
@@ -495,12 +631,20 @@ function resetCombat(){
   nameGaucheSpan.textContent='';
   nameDroiteSpan.textContent='';
   imgGauche.classList.add('hidden'); imgDroite.classList.add('hidden');
-  imgGauche.classList.remove('mega-flash','mega-aura');
-  imgDroite.classList.remove('mega-flash','mega-aura');
-  megaBtn.classList.add('hidden'); restartBtn.classList.add('hidden');
+  imgGauche.classList.remove('mega-flash','mega-aura','gigamax-aura');
+  imgDroite.classList.remove('mega-flash','mega-aura','gigamax-aura');
+  megaBtn.classList.add('hidden'); gigamaxBtn.classList.add('hidden'); restartBtn.classList.add('hidden');
+  bagBtn && bagBtn.classList.add('hidden');
+  megaBtn.classList.remove('disabled'); gigamaxBtn.classList.remove('disabled');
+  megaBtn.disabled = false; gigamaxBtn.disabled = false;
   updateHPBars();
   enqueue('Sélectionne un Pokémon pour commencer.');
   overlay.style.display='flex';
+  tour=1; phase='player';
+  // Restaurer inventaire (quantités)
+  Object.keys(__BASE_INVENTAIRE).forEach(k=>{
+    if(INVENTAIRE[k]) INVENTAIRE[k].qty = __BASE_INVENTAIRE[k].qty;
+  });
 }
 
 restartBtn.addEventListener('click', ()=> {
@@ -511,30 +655,8 @@ restartBtn.addEventListener('click', ()=> {
 // Bouton menu en cours de combat (retour au choix sans recharger la page)
 if(menuBtn){
   menuBtn.addEventListener('click', ()=>{
-    if(combatTermine){
-      resetCombat();
-      return;
-    }
-    // Annuler combat courant et revenir au menu
-    joueur = null; ennemi = null; combatTermine = false; megaUtilisee = false; processing=false; actionQueue=[];
-    // Nettoyage rapide interface (sans recréer toutes les structures)
-    logBox.innerHTML='';
-    [...attaquesGauche,...attaquesDroite].forEach(div=>{
-      div.textContent='---';
-      ['degat','type','precision','effet','pp','pprestant'].forEach(a=> delete div.dataset[a]);
-      div.style.opacity='';
-      if(div.parentElement.classList.contains('attaque-droite')) div.style.pointerEvents='none'; else div.style.pointerEvents='auto';
-    });
-    imgGauche.src=''; imgDroite.src='';
-    nameGaucheSpan.textContent=''; nameDroiteSpan.textContent='';
-    imgGauche.classList.add('hidden'); imgDroite.classList.add('hidden');
-    megaBtn.classList.add('hidden'); restartBtn.classList.add('hidden');
-    if(endOverlay) endOverlay.style.display='none';
-    updateHPBars();
-    enqueue('Sélectionne un Pokémon pour commencer.');
-    overlay.style.display='flex';
-    // Ré-afficher menu seulement après sélection, donc on le masque ici
-    menuBtn.classList.add('hidden');
+    enqueue('<em>Retour au menu...</em>');
+    setTimeout(()=>{ resetCombat(); menuBtn.classList.add('hidden'); }, 250);
   });
 }
 
@@ -548,6 +670,152 @@ returnMenuBtn && returnMenuBtn.addEventListener('click', ()=>{
 let megaDisponible = true;
 let megaUtilisee = false;
 let gigamaxUtilise = false;
+// ================= Sac & Inventaire =================
+const INVENTAIRE = {
+  potion: { id:'potion', nom:'Potion', desc:'+20 PV (jusqu\'à 100)', qty:3, type:'heal', valeur:20 },
+  superPotion: { id:'superPotion', nom:'Super Potion', desc:'+40 PV', qty:2, type:'heal', valeur:40 },
+  potionPP: { id:'potionPP', nom:'Potion PP', desc:'+5 PP à une attaque', qty:4, type:'pp', valeur:5 },
+  elixir: { id:'elixir', nom:'Élixir', desc:'Restaure tous les PP d\'une attaque', qty:2, type:'ppfull' },
+  maxPotion: { id:'maxPotion', nom:'Max Potion', desc:'PV à 100%', qty:1, type:'healfull' }
+};
+// Snapshot inventaire (placé après la déclaration pour éviter ReferenceError)
+const __BASE_INVENTAIRE = JSON.parse(JSON.stringify(INVENTAIRE));
+
+function renderInventaire(){
+  if(!bagItemsContainer) return;
+  bagItemsContainer.innerHTML='';
+  Object.values(INVENTAIRE).forEach(obj=>{
+    const div=document.createElement('div');
+    div.className='bag-item'+(obj.qty<=0?' disabled':'');
+    div.dataset.itemId = obj.id;
+    div.innerHTML = `
+      <span class="bag-item-title">${obj.nom}</span>
+      <span class="bag-item-desc">${obj.desc}</span>
+      <span class="bag-item-qty">x${obj.qty}</span>
+    `;
+    if(obj.qty>0) div.addEventListener('click', ()=> utiliserObjet(obj));
+    bagItemsContainer.appendChild(div);
+  });
+}
+
+function ouvrirSac(){
+  if(!joueur || combatTermine) return;
+  renderInventaire();
+  bagOverlay.classList.remove('hidden'); // au cas où il aurait été caché via classe
+  bagOverlay.style.display='flex';
+  bagOverlay.classList.add('show');
+  bagInfo.textContent='Sélectionne un objet.';
+}
+function fermerSac(){
+  bagOverlay.style.display='none';
+  bagOverlay.classList.remove('show');
+}
+
+function utiliserObjet(obj){
+  if(obj.qty<=0) return;
+  if(obj.type==='heal'){
+    if(hpGauche>=100){ bagInfo.textContent='PV déjà au maximum.'; return; }
+    const avant = hpGauche;
+    hpGauche = Math.min(100, hpGauche + obj.valeur);
+    updateHPBars({healSide:'gauche'});
+    enqueue(`<em>${joueur.nom} récupère ${hpGauche-avant} PV grâce à ${obj.nom}.</em>`);
+  } else if(obj.type==='healfull'){
+    if(hpGauche===100){ bagInfo.textContent='PV déjà au maximum.'; return; }
+    const avant = hpGauche;
+    hpGauche = 100; updateHPBars({healSide:'gauche'});
+    enqueue(`<em>${joueur.nom} est totalement soigné (+${100-avant} PV) !</em>`);
+  } else if(obj.type==='pp' || obj.type==='ppfull'){
+    // Activer mode sélection par clic
+    if(window.__ppSelectCancel){ // nettoyage précédent si bug
+      window.__ppSelectCancel();
+    }
+    // Fermer proprement le sac avant sélection
+    fermerSac();
+    ppSelectionActive = true;
+    bagInfo.textContent = obj.type==='pp' ? 'Sélectionne une attaque à augmenter.' : 'Sélectionne une attaque à restaurer.';
+    const selectable = [];
+    attaquesGauche.forEach(div=>{
+      if(div.dataset && div.dataset.pp){
+        const cur = parseInt(div.dataset.pprestant||div.dataset.pp||'0',10);
+        const max = parseInt(div.dataset.pp||'0',10);
+        if(cur < max){
+          div.classList.add('pp-selectable');
+          div.style.outline='2px solid #ffcc33';
+          div.style.cursor='cell';
+          const handler = ()=>{
+            // Consommation
+            let avant = parseInt(div.dataset.pprestant,10);
+            if(obj.type==='pp'){
+              const ajout = Math.min(obj.valeur, max-avant);
+              div.dataset.pprestant = Math.min(max, avant + obj.valeur);
+              majLibelleAttaque(div);
+              enqueue(`<em>PP de ${div.dataset.originalname} +${ajout}.</em>`);
+            } else {
+              div.dataset.pprestant = max;
+              majLibelleAttaque(div);
+              enqueue(`<em>PP de ${div.dataset.originalname} restaurés (${max}).</em>`);
+            }
+            obj.qty -=1;
+            renderInventaire();
+            bagInfo.textContent = `${obj.nom} utilisé.`;
+            // Nettoyage
+            selectable.forEach(o=> o.el.removeEventListener('click', o.fn));
+            attaquesGauche.forEach(d2=>{ d2.classList.remove('pp-selectable'); d2.style.outline=''; d2.style.cursor=''; });
+            ppSelectionActive = false;
+          };
+          div.addEventListener('click', handler, { once:true });
+          selectable.push({el:div, fn:handler});
+        }
+      }
+    });
+    if(!selectable.length){
+      bagInfo.textContent='Aucune attaque n\'a besoin de PP.';
+      ppSelectionActive = false;
+      return;
+    }
+    // Fournir une fonction globale d'annulation (optionnel)
+    window.__ppSelectCancel = ()=>{
+      selectable.forEach(o=> o.el.removeEventListener('click', o.fn));
+      attaquesGauche.forEach(d2=>{ d2.classList.remove('pp-selectable'); d2.style.outline=''; d2.style.cursor=''; });
+      bagInfo.textContent='Sélection annulée.';
+      delete window.__ppSelectCancel;
+      ppSelectionActive = false;
+    };
+    return; // On ne consomme pas tant que pas cliqué
+  }
+  obj.qty -=1;
+  const itemDiv = bagItemsContainer.querySelector(`[data-item-id="${obj.id}"]`);
+  if(itemDiv){ itemDiv.classList.add('flash'); setTimeout(()=> itemDiv.classList.remove('flash'), 900); }
+  renderInventaire();
+  bagInfo.textContent = `${obj.nom} utilisé.`;
+}
+
+bagBtn && bagBtn.addEventListener('click', ()=>{
+  if(bagOverlay.style.display==='flex') fermerSac(); else ouvrirSac();
+});
+closeBagBtn && closeBagBtn.addEventListener('click', ()=> fermerSac());
+bagOverlay && bagOverlay.addEventListener('click', e=>{ if(e.target===bagOverlay) fermerSac(); });
+
+// Fonction pour mettre à jour l'état des boutons de transformation
+function updateTransformationButtons() {
+  // Bouton Méga-évolution
+  if (joueur && joueur.mega && !megaUtilisee) {
+    megaBtn.classList.remove('hidden', 'disabled');
+    megaBtn.disabled = false;
+    megaBtn.title = "Méga-évoluer (une seule fois)";
+  } else {
+    megaBtn.classList.add('hidden');
+  }
+
+  // Bouton Gigamax
+  if (joueur && joueur.gigamax && !gigamaxUtilise) {
+    gigamaxBtn.classList.remove('hidden', 'disabled');
+    gigamaxBtn.disabled = false;
+    gigamaxBtn.title = "Gigamax (Pikachu uniquement)";
+  } else {
+    gigamaxBtn.classList.add('hidden');
+  }
+}
 
 // Attaques spéciales Gigamax
 const GIGAMAX_ATTACKS = {
@@ -614,18 +882,18 @@ function appliquerMega(pokemon, cote){
 }
 
 megaBtn.addEventListener('click', ()=>{
-  if(!joueur || megaUtilisee || !joueur.mega) return;
+  if(!joueur || megaUtilisee || !joueur.mega || megaBtn.disabled) return;
   megaUtilisee = true;
-  megaBtn.classList.add('hidden');
+  updateTransformationButtons();
   appliquerMega(joueur, 'gauche');
 });
 
 // Bouton Gigamax
 if(gigamaxBtn){
   gigamaxBtn.addEventListener('click', ()=>{
-    if(!joueur || gigamaxUtilise || !joueur.gigamax) return;
+    if(!joueur || gigamaxUtilise || !joueur.gigamax || gigamaxBtn.disabled) return;
     gigamaxUtilise = true;
-    gigamaxBtn.classList.add('hidden');
+    updateTransformationButtons();
     appliquerGigamax(joueur, 'gauche');
   });
 }
@@ -647,13 +915,73 @@ attaque = function(sourceColonne, elementAttaque){
 // Ajout nouvel effet atk+ (Danse Draco)
 // Ajout déclenchement automatique méga ennemi à 50% PV si disponible
 
+// Variables pour l'IA de l'ennemi
+let ennemiMegaUtilisee = false;
+let ennemiGigamaxUtilise = false;
+ennemiTours = 0; // Compteur de décisions ennemies
+
+// IA de l'ennemi pour décider de ses actions
+function decisionEnnemi() {
+  if (!ennemi || hpDroite <= 0) return null;
+
+  // Conditions de transformation aléatoire (PAS au premier tour ennemi)
+  const canGigamax = ennemi.gigamax && !ennemiGigamaxUtilise && !ennemi.__gigamax;
+  const canMega = ennemi.mega && !ennemiMegaUtilisee && !ennemi.__mega;
+  if (ennemiTours >= 1 && (canGigamax || canMega)) {
+    // Probabilité de base augmente avec le nombre de tours ennemis
+    let p = 0.15 + Math.min(0.30, ennemiTours * 0.05); // plafonné à 45%
+    // Bonus selon l'état des PV (plus faible -> plus de chances)
+    if (hpDroite <= 75) p += 0.05;
+    if (hpDroite <= 55) p += 0.10;
+    if (hpDroite <= 35) p += 0.15;
+    // Réduction si le joueur est très bas en PV (pour éviter transformation trop gratuite)
+    if (hpGauche <= 30) p *= 0.75;
+    if (p > 0.65) p = 0.65; // hard cap
+    if (Math.random() < p) {
+      // Choix de la forme : si les deux sont possibles on répartit (léger biais gigamax)
+      if (canGigamax && canMega) {
+        return Math.random() < 0.55 ? { type: 'gigamax' } : { type: 'mega' };
+      } else if (canGigamax) {
+        return { type: 'gigamax' };
+      } else if (canMega) {
+        return { type: 'mega' };
+      }
+    }
+  }
+
+  // Pas de transformation ce tour -> sélection d'attaque
+  const attaquesDisponibles = ennemi.attaques.map((att,idx)=>({att,idx})).filter(({att,idx})=>{
+    const divAtt = attaquesDroite[idx];
+    if(!divAtt) return false;
+    const ppRestant = parseInt(divAtt.dataset.pprestant || divAtt.dataset.pp || '999',10);
+    return ppRestant>0;
+  });
+  if(!attaquesDisponibles.length) return null;
+  const r = Math.random();
+  let choix;
+  if(r < 0.5){
+    choix = attaquesDisponibles[Math.floor(Math.random()*attaquesDisponibles.length)]; // totalement aléatoire
+  } else if(r < 0.8){
+    const faibles = attaquesDisponibles.filter(o=> o.att.puissance>0 && o.att.puissance < 35);
+    if(faibles.length) choix = faibles[Math.floor(Math.random()*faibles.length)];
+  }
+  if(!choix){
+    if(hpGauche <= 30){
+      const fortes = attaquesDisponibles.filter(o=> o.att.puissance >= 40);
+      choix = fortes.length ? fortes[Math.floor(Math.random()*fortes.length)] : attaquesDisponibles[Math.floor(Math.random()*attaquesDisponibles.length)];
+    } else if(hpDroite <= 40 && Math.random() < 0.35){
+      const statut = attaquesDisponibles.filter(o=> o.att.type==='statut');
+      choix = statut.length ? statut[Math.floor(Math.random()*statut.length)] : attaquesDisponibles[Math.floor(Math.random()*attaquesDisponibles.length)];
+    } else {
+      choix = attaquesDisponibles[Math.floor(Math.random()*attaquesDisponibles.length)];
+    }
+  }
+  return { type:'attaque', index: choix.idx };
+}
+
 // Observer le log queue pour appliquer patch dynamique après chaque action
 function baseAfterAction(){
-  if(!megaUtilisee && joueur && joueur.mega){ megaBtn.classList.remove('hidden'); }
-  if(ennemi && ennemi.mega && !ennemi.__mega && hpDroite <= 50){
-    ennemi.__mega = true;
-    appliquerMega(ennemi, 'droite');
-  }
+  updateTransformationButtons();
 }
 
 // (Hook processQueue supprimé : afterAction est maintenant appelé directement dans processQueue)
@@ -756,7 +1084,8 @@ appliquerMega = function(pokemon, cote){
   }
   // Soins bonus lors de la méga-évolution
   const side = cote==='gauche' ? 'gauche' : 'droite';
-  const healBase = 25; // quantité brute de soin
+  // Équilibrage : le joueur soigne 25, l'ennemi seulement 12
+  const healBase = side==='droite' ? 12 : 25; // quantité brute de soin
   let avant = side==='gauche'? hpGauche : hpDroite;
   let recup = Math.min(healBase, 100 - avant);
   if(recup > 0){
@@ -764,17 +1093,24 @@ appliquerMega = function(pokemon, cote){
     updateHPBars({ healSide: side });
     enqueue(`<em>${pokemon.nom} regagne ${recup} PV grâce à son énergie méga !</em>`);
   }
-  // Boosts progressifs sur 3 pulses
-  let step = 0;
-  const interval = setInterval(()=>{
-    if(step===0){ if(cote==='gauche') stats.gauche.atkStage = Math.min(stats.gauche.atkStage+1,6); else stats.droite.atkStage = Math.min(stats.droite.atkStage+1,6); }
-    if(step===1){ if(cote==='gauche') stats.gauche.defStage = Math.min(stats.gauche.defStage+1,6); else stats.droite.defStage = Math.min(stats.droite.defStage+1,6); }
-    if(step===2){ if(cote==='gauche') stats.gauche.accStage = Math.min(stats.gauche.accStage+1,6); else stats.droite.accStage = Math.min(stats.droite.accStage+1,6); }
+  if(side==='gauche'){
+    // Boosts progressifs pour le joueur uniquement
+    let step = 0;
+    const interval = setInterval(()=>{
+      if(step===0) stats.gauche.atkStage = Math.min(stats.gauche.atkStage+1,6);
+      if(step===1) stats.gauche.defStage = Math.min(stats.gauche.defStage+1,6);
+      if(step===2) stats.gauche.accStage = Math.min(stats.gauche.accStage+1,6);
+      majBadges();
+      step++;
+      if(step>2) clearInterval(interval);
+    },600);
+    enqueue(`<div class='mega-log'><em>La puissance de ${pokemon.nom} monte en flèche !</em></div>`);
+  } else {
+    // Ennemi : boost immédiat plus modeste : +1 DEF seulement
+    stats.droite.defStage = Math.min(stats.droite.defStage+1,6);
     majBadges();
-    step++;
-    if(step>2) clearInterval(interval);
-  }, 600);
-  enqueue(`<div class='mega-log'><em>La puissance de ${pokemon.nom} monte en flèche !</em></div>`);
+    enqueue(`<div class='mega-log'><em>${pokemon.nom} se transforme prudemment.</em></div>`);
+  }
 };
 
 // ================= Gigamax ===================
@@ -786,14 +1122,14 @@ function appliquerGigamax(pokemon, cote){
   setTimeout(()=>{ imgEl.classList.remove('gigamax-transform'); imgEl.classList.add('gigamax-aura'); },1400);
   const host = imgEl.parentElement;
   if(host){
-    for(let i=0;i<8;i++){
+    for(let i=0;i<6;i++){
       setTimeout(()=>{
         const bolt=document.createElement('div');
         bolt.className='gigamax-electric';
         host.style.position='relative';
         host.appendChild(bolt);
-        setTimeout(()=> bolt.remove(), 1000);
-      }, i*120);
+        setTimeout(()=> bolt.remove(), 900);
+      }, i*130);
     }
   }
   pokemon.nom = pokemon.gigamax.nom;
@@ -805,11 +1141,15 @@ function appliquerGigamax(pokemon, cote){
   enqueue(`<span class='gigamax-log'><strong>${pokemon.nom}</strong> libère son pouvoir Gigamax !</span>`);
   const side = cote==='gauche'? 'gauche':'droite';
   let avant = side==='gauche'? hpGauche: hpDroite;
-  const bonus = Math.min(100-avant, 30);
+  const bonus = side==='droite' ? Math.min(100-avant, 15) : Math.min(100-avant, 30);
   if(bonus>0){ if(side==='gauche') hpGauche += bonus; else hpDroite += bonus; updateHPBars({healSide: side}); enqueue(`<em>${pokemon.nom} gagne ${bonus} PV sous forme d'énergie Gigamax !</em>`); }
   if(GIGAMAX_ATTACKS[pokemon.nom]){ pokemon.attaques = GIGAMAX_ATTACKS[pokemon.nom]; configAttaques(side, pokemon); }
-  if(side==='gauche'){ stats.gauche.atkStage = Math.min(stats.gauche.atkStage+1,6); stats.gauche.defStage = Math.min(stats.gauche.defStage+1,6); }
-  else { stats.droite.atkStage = Math.min(stats.droite.atkStage+1,6); stats.droite.defStage = Math.min(stats.droite.defStage+1,6); }
+  if(side==='gauche'){
+    stats.gauche.atkStage = Math.min(stats.gauche.atkStage+1,6);
+    stats.gauche.defStage = Math.min(stats.gauche.defStage+1,6);
+  } else {
+    stats.droite.atkStage = Math.min(stats.droite.atkStage+1,6); // ennemi: boost limité
+  }
   majBadges();
 }
 
@@ -822,7 +1162,7 @@ attaque = function(sourceColonne, elementAttaque){
     return;
   }
   oldAttaque2(sourceColonne, elementAttaque);
-  if(sourceColonne==='gauche' && elementAttaque && elementAttaque.textContent==='Giga-Foudre'){
+  if(sourceColonne==='gauche' && elementAttaque && (elementAttaque.dataset.originalname==='Giga-Foudre')){
     if(Math.random()<0.3 && ennemi && hpDroite>0){
       ennemi.__paralyseTour = true;
       enqueue(`<em>${ennemi.nom} est paralysé par l'électricité gigantesque !</em>`);
