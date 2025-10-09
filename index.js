@@ -89,6 +89,18 @@ const POKEMONS = {
       { nom: 'Aqua-Jet', puissance: 40, type: 'eau', precision: 100, pp: 20 },
       { nom: 'Affûtage', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
     ]
+  },
+  // Secret post-Pokédex: Rayquaza (débloqué lorsque tous les autres sont capturés)
+  rayquaza: {
+    secret: true,
+    nom: 'Rayquaza', type: 'dragon', image: 'images/rayquaza.png', baseAtk: 95, baseDef: 80,
+    mega: { nom: 'Méga-Rayquaza', type: 'dragon', image: 'images/mega rayquaza.webp', baseAtk: 120, baseDef: 100 },
+    attaques: [
+      { nom: 'Draco-Souffle', puissance: 60, type: 'dragon', precision: 95, pp: 15 },
+      { nom: 'Ouragan', puissance: 45, type: 'dragon', precision: 90, pp: 15 },
+      { nom: 'Vol', puissance: 50, type: 'normal', precision: 95, pp: 10 },
+      { nom: 'Danse Draco', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
+    ]
   }
 };
 
@@ -97,6 +109,9 @@ const TYPE_TABLE = {
   feu: { plante: 2, eau: 0.5, feu: 0.5 },
   eau: { feu: 2, plante: 0.5, eau: 0.5 },
   plante: { eau: 2, feu: 0.5, plante: 0.5 },
+  electrique: { eau: 2, plante: 0.5, electrique: 0.5 },
+  psychique: { psychique: 0.5 },
+  dragon: { dragon: 2, feu: 1, eau: 1, plante: 1, electrique: 1, normal: 1, psychique: 1 },
   normal: {},
   statut: {}
 };
@@ -177,6 +192,8 @@ let phase = 'player'; // 'player' ou 'enemy'
 let ppSelectionActive = false;
 // Persistance simple de l'évolution Grenousse -> Croâporal pendant la session (peut être étendue au localStorage)
 let EVOLUTIONS = { grenousseToCroaporal: false, croaporalToAmphinobi: false };
+// Secrets (session uniquement)
+let SECRET = { rayquazaUnlocked: false, rayquazaCaptured: false };
 
 // Sons désactivés
 function playTone(){}
@@ -864,10 +881,18 @@ window.__captureStatus = ()=>({ captured:[...CAPTURED], total:Object.keys(POKEMO
 
 function choisirEnnemi(keyExclu){
   const banned = new Set(['croaporal','amphinobi']); // Les évolutions joueur-only ne doivent jamais apparaître en ennemi
-  const candidates = Object.keys(POKEMONS).filter(k=> k!==keyExclu && !banned.has(k));
+  const candidates = Object.keys(POKEMONS).filter(k=>{
+    if(k===keyExclu) return false;
+    if(banned.has(k)) return false;
+    // Éviter les combats contre des Pokémon déjà capturés
+    if(CAPTURED.has(k)) return false;
+    // Rayquaza ne peut apparaître que s'il est déverrouillé et pas encore capturé
+    if(k==='rayquaza' && (!SECRET.rayquazaUnlocked || SECRET.rayquazaCaptured)) return false;
+    return true;
+  });
   if(candidates.length===0) return null;
   const pick = candidates[(Math.random()*candidates.length)|0];
-  if(window.__debugCapture){ console.log('[DEBUG choisirEnnemi]', {keyExclu, pick}); }
+  if(window.__debugCapture){ console.log('[DEBUG choisirEnnemi]', {keyExclu, pick, candidates}); }
   return pick;
 }
 
@@ -1147,8 +1172,20 @@ function renderPokedex(){
     const card = document.createElement('div');
     card.className = 'dex-entry' + (CAPTURED.has(key) ? '' : ' locked');
     card.dataset.key = key;
-    const img = document.createElement('img'); img.src = data.image; img.alt = data.nom;
-    const name = document.createElement('div'); name.className='dex-name'; name.textContent = data.nom;
+    const img = document.createElement('img');
+    const name = document.createElement('div'); name.className='dex-name';
+    if(key==='rayquaza' && !CAPTURED.has('rayquaza')){
+      // Placeholder point d'interrogation tant que non capturé
+      const svg = encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><rect width='128' height='128' rx='16' ry='16' fill='rgba(255,255,255,0.06)'/><text x='50%' y='54%' dominant-baseline='middle' text-anchor='middle' font-size='84' font-family='Segoe UI, Arial' fill='#cccccc'>?</text></svg>");
+      img.src = `data:image/svg+xml;utf8,${svg}`;
+      img.alt = '????';
+      name.textContent = '????';
+    } else {
+      img.src = data.image; img.alt = data.nom;
+      name.textContent = data.nom;
+    }
+    // Fallback au cas où une image est manquante
+    img.onerror = function(){ this.onerror=null; const p = encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><rect width='128' height='128' rx='16' ry='16' fill='rgba(255,255,255,0.06)'/><text x='50%' y='54%' dominant-baseline='middle' text-anchor='middle' font-size='84' font-family='Segoe UI, Arial' fill='#cccccc'>?</text></svg>"); this.src=`data:image/svg+xml;utf8,${p}`; };
     card.appendChild(img); card.appendChild(name);
     pokedexGrid.appendChild(card);
   });
@@ -1256,11 +1293,23 @@ function animationCapture(reussite, pokeball){
           addPokemonOption(currentCaptureEnemyKey);
     // Rafraîchir Pokédex si ouvert
     try{ if(pokedexOverlay && pokedexOverlay.style.display==='flex') renderPokedex(); }catch(_e){}
+    // Secret: Rayquaza capturé
+    if(currentCaptureEnemyKey==='rayquaza'){
+      SECRET.rayquazaCaptured = true;
+    }
         }
-        // Vérifier si tous capturés -> reset automatique après message
+        // Déverrouillage de Rayquaza quand tous les non-secrets sont capturés
+        const totalNonSecret = Object.entries(POKEMONS).filter(([k,v])=> !v.secret).length;
+        const capturedNonSecret = [...CAPTURED].filter(k=> !POKEMONS[k]?.secret).length;
+        if(!SECRET.rayquazaUnlocked && capturedNonSecret >= totalNonSecret){
+          SECRET.rayquazaUnlocked = true;
+          enqueue('<strong>Un Pokémon mystérieux semble rôder...</strong>');
+          try{ if(pokedexOverlay && pokedexOverlay.style.display==='flex') renderPokedex(); }catch(_e){}
+        }
+        // Pokédex complet (y compris secrets)
         if(CAPTURED.size === Object.keys(POKEMONS).length){
-          enqueue('<strong>Tous les Pokémon sont capturés ! Réinitialisation automatique...</strong>');
-          setTimeout(()=>{ resetCombat(); CAPTURED.clear(); }, 2200);
+          enqueue('<strong>Pokédex complet !</strong>');
+          setTimeout(()=>{ resetCombat(); }, 2200);
         }
         const bonus=Math.floor(Math.random()*15)+25; pokepieces+=bonus; enqueue(`<em style=\"color:#ffcb05;\">+${bonus} PokéPièces bonus pour la capture !</em>`); updateShopCurrency();
         pokeball.qty-=1; renderInventaire();
@@ -1613,6 +1662,8 @@ setTypes(POKEMONS.ectoplasma, ['spectre']);
 setTypes(POKEMONS.grenousse, ['eau']);
 setTypes(POKEMONS.croaporal, ['eau']);
 setTypes(POKEMONS.amphinobi, ['eau']);
+// Rayquaza (secret)
+if(POKEMONS.rayquaza){ setTypes(POKEMONS.rayquaza, ['dragon']); if(POKEMONS.rayquaza.mega){ POKEMONS.rayquaza.mega.types = ['dragon']; } }
 // Ajout types méga multiples
 POKEMONS.leviator.mega.types = ['eau','tenebres'];
 POKEMONS.dragaufeu.mega.types = ['feu','dragon'];
