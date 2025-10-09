@@ -75,18 +75,18 @@ const POKEMONS = {
     nom: 'Croâporal', type: 'eau', image: 'images/croaporal.png', baseAtk: 60, baseDef: 45,
     // Pas de méga pour Croâporal
     attaques: [
-      { nom: 'Pistolet à O', puissance: 30, type: 'eau', precision: 100, pp: 30 },
-      { nom: 'Écume', puissance: 25, type: 'eau', precision: 100, pp: 30 },
-      { nom: 'Cascade', puissance: 45, type: 'eau', precision: 95, pp: 15 },
+      { nom: 'Pistolet à O', puissance: 35, type: 'eau', precision: 100, pp: 25 },
+      { nom: 'Écume', puissance: 30, type: 'eau', precision: 100, pp: 25 },
+      { nom: 'Cascade', puissance: 50, type: 'eau', precision: 95, pp: 15 },
       { nom: 'Danse Lames', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
     ]
   },
   amphinobi: {
     nom: 'Amphinobi', type: 'eau', image: 'images/amphinobi.png', baseAtk: 80, baseDef: 60,
     attaques: [
-      { nom: 'Hydrocanon', puissance: 55, type: 'eau', precision: 75, pp: 5 },
-      { nom: 'Aqua-Jet', puissance: 35, type: 'eau', precision: 100, pp: 20 },
-      { nom: 'Cascade', puissance: 45, type: 'eau', precision: 95, pp: 15 },
+      { nom: 'Hydrocanon', puissance: 60, type: 'eau', precision: 80, pp: 5 },
+      { nom: 'Surf', puissance: 50, type: 'eau', precision: 95, pp: 15 },
+      { nom: 'Aqua-Jet', puissance: 40, type: 'eau', precision: 100, pp: 20 },
       { nom: 'Affûtage', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
     ]
   }
@@ -125,6 +125,7 @@ const returnMenuBtn = document.getElementById('return-menu-btn');
 const megaBtn = document.getElementById('mega-panel-btn');
 const menuBtn = document.getElementById('menu-btn');
 const gigamaxBtn = document.getElementById('gigamax-panel-btn');
+const sashanobiBtn = document.getElementById('sashanobi-btn');
 const bagBtn = document.getElementById('bag-btn');
 const bagOverlay = document.getElementById('bag-overlay');
 const bagItemsContainer = document.getElementById('bag-items');
@@ -383,29 +384,11 @@ function formaterLibelleAttaque(div){
   const ppRest = div.dataset.pprestant;
   let blocPP = '';
   if(ppTotal){ blocPP = `${ppRest}/${ppTotal}`; }
-  let predTxt = '—';
+  // Affichage fixe: toujours la puissance de l'attaque, sans contexte
+  const predTxt = !estStatus ? puissanceBrute.toString() : '—';
   if(!estStatus){
-    const side = attaquesGauche.includes(div)? 'gauche':'droite';
-    const attaquant = side==='gauche'? joueur : ennemi;
-    const defenseur = side==='gauche'? ennemi : joueur;
-    if(attaquant && defenseur){
-      const atkStat = attaquant.baseAtk * stageToMult(stats[side].atkStage);
-      const defStat = defenseur.baseDef * stageToMult(stats[side==='gauche'?'droite':'gauche'].defStage);
-  // Facteur global d'équilibrage des dégâts (augmenté de 1.8 à 2.1)
-  let base = (atkStat / defStat) * (puissanceBrute / 10) * 2.1;
-      const cibleType = defenseur.types || defenseur.type;
-      const multType = calculMultiplicateur(div.dataset.type, cibleType);
-      base *= multType;
-      const min = Math.max(1, Math.round(base * 0.85));
-      const max = Math.max(1, Math.round(base));
-      predTxt = min===max? `${max}` : `${min}-${max}`;
-      div.dataset.predmindmg = min;
-      div.dataset.predmaxdmg = max;
-    } else {
-      predTxt = puissanceBrute>0? puissanceBrute.toString():'—';
-      div.dataset.predmindmg = puissanceBrute;
-      div.dataset.predmaxdmg = puissanceBrute;
-    }
+    div.dataset.predmindmg = puissanceBrute;
+    div.dataset.predmaxdmg = puissanceBrute;
   } else {
     delete div.dataset.predmindmg; delete div.dataset.predmaxdmg;
   }
@@ -822,10 +805,6 @@ function resetCombat(){
     });
   }, 100);
   tour=1; phase='player';
-  // Restaurer inventaire (quantités)
-  Object.keys(__BASE_INVENTAIRE).forEach(k=>{
-    if(INVENTAIRE[k]) INVENTAIRE[k].qty = __BASE_INVENTAIRE[k].qty;
-  });
 }
 
 restartBtn.addEventListener('click', ()=> {
@@ -857,7 +836,7 @@ const INVENTAIRE = {
   elixir: { id:'elixir', nom:'Élixir', desc:'Restaure tous les PP d\'une attaque', qty:2, type:'ppfull' },
   superPotion: { id:'superPotion', nom:'Super Potion', desc:'+40 PV', qty:2, type:'heal', valeur:40 },
   maxPotion: { id:'maxPotion', nom:'Max Potion', desc:'PV à 100%', qty:1, type:'healfull' },
-  superBonbon: { id:'superBonbon', nom:'Super Bonbon', desc:'Fait évoluer Grenousse en Croâporal (définitif)', qty:0, type:'evolve', cible:'grenousse->croaporal' },
+  superBonbon: { id:'superBonbon', nom:'Super Bonbon', desc:'Permet de faire évoluer certains Pokémon', qty:0, type:'evolve', cible:'grenousse->croaporal' },
   pokeball: { id:'pokeball', nom:'Poké Ball', desc:'Capture un Pokémon sauvage', qty:5, type:'capture' }
 };
 // Snapshot inventaire (placé après la déclaration pour éviter ReferenceError)
@@ -871,7 +850,7 @@ const SHOP_ITEMS = {
   elixir: { id:'elixir', nom:'Élixir', desc:'Restaure tous les PP d\'une attaque', prix:35 },
   superPotion: { id:'superPotion', nom:'Super Potion', desc:'+40 PV', prix:25 },
   maxPotion: { id:'maxPotion', nom:'Max Potion', desc:'PV à 100%', prix:50 },
-  superBonbon: { id:'superBonbon', nom:'Super Bonbon', desc:'Évolue Grenousse en Croâporal (définitif)', prix:60 },
+  superBonbon: { id:'superBonbon', nom:'Super Bonbon', desc:'Permet de faire évoluer certains Pokémon', prix:60 },
   pokeball: { id:'pokeball', nom:'Poké Ball', desc:'Capture un Pokémon sauvage', prix:30 }
 };
 
@@ -1030,7 +1009,8 @@ function utiliserObjet(obj){
       imgGauche.classList.add('mega-flash'); setTimeout(()=> imgGauche.classList.remove('mega-flash'), 600);
       configAttaques('gauche', joueur);
       ppState.gauche = joueur.attaques.map(a=> a.pp || 0);
-      hpGauche = hpAvant; updateHPBars(); majBadges(); updateTransformationButtons(); updateDisplayedDamages();
+  hpGauche = hpAvant; updateHPBars(); majBadges(); updateTransformationButtons(); updateDisplayedDamages();
+  attaquesGauche.forEach(div=> majLibelleAttaque(div));
       CAPTURED.add('croaporal');
       evoDone = true;
       enqueue('<em>Ton Grenousse évolue en <strong>Croâporal</strong> grâce au Super Bonbon !</em>');
@@ -1047,7 +1027,8 @@ function utiliserObjet(obj){
       imgGauche.classList.add('mega-flash'); setTimeout(()=> imgGauche.classList.remove('mega-flash'), 600);
       configAttaques('gauche', joueur);
       ppState.gauche = joueur.attaques.map(a=> a.pp || 0);
-      hpGauche = hpAvant; updateHPBars(); majBadges(); updateTransformationButtons(); updateDisplayedDamages();
+  hpGauche = hpAvant; updateHPBars(); majBadges(); updateTransformationButtons(); updateDisplayedDamages();
+  attaquesGauche.forEach(div=> majLibelleAttaque(div));
       CAPTURED.add('amphinobi');
       evoDone = true;
       enqueue('<em>Ton Croâporal évolue en <strong>Amphinobi</strong> grâce au Super Bonbon !</em>');
@@ -1335,6 +1316,14 @@ function updateTransformationButtons() {
   } else {
     gigamaxBtn.classList.add('hidden');
   }
+  // Bouton Sashanobi (Amphinobi uniquement, une seule fois)
+  if (joueur && joueur.nom === 'Amphinobi' && !joueur.__sashanobi) {
+    sashanobiBtn.classList.remove('hidden','disabled');
+    sashanobiBtn.disabled = false;
+    sashanobiBtn.title = 'Forme Sashanobi (une seule fois)';
+  } else {
+    sashanobiBtn.classList.add('hidden');
+  }
 }
 
 // Attaques spéciales Gigamax
@@ -1398,6 +1387,51 @@ function appliquerGigamax(pokemon, cote){
   }
   // Recalcul immédiat des dégâts affichés pour refléter les nouveaux stats/formes
   updateDisplayedDamages();
+}
+
+// Transformation spéciale Sashanobi
+function appliquerSashanobi(pokemon, cote){
+  if(!pokemon || pokemon.nom !== 'Amphinobi' || pokemon.__sashanobi) return;
+  const isJoueur = cote==='gauche';
+  const imgEl = isJoueur ? imgGauche : imgDroite;
+  const host = imgEl.parentElement; if(host) host.style.position='relative';
+  // Super animation: double flash, particules, halo bleu
+  const styleId='sashanobi-keyframes';
+  if(!document.getElementById(styleId)){
+    const st=document.createElement('style');
+    st.id=styleId;
+    st.textContent=`
+      @keyframes snFlash{0%{opacity:0}10%{opacity:1}100%{opacity:0}}
+      @keyframes snPulse{0%{filter:hue-rotate(0) brightness(1)}50%{filter:hue-rotate(20deg) brightness(1.25)}100%{filter:hue-rotate(0) brightness(1)}}
+      .sn-particles{position:absolute;inset:0;pointer-events:none}
+      .sn-particle{position:absolute;width:6px;height:6px;background:linear-gradient(45deg,#39f,#9ff);border-radius:50%;box-shadow:0 0 10px #39f}
+    `;
+    document.head.appendChild(st);
+  }
+  const flash=document.createElement('div'); flash.style.cssText='position:absolute;inset:0;background:radial-gradient(circle,rgba(100,180,255,.9) 0%,rgba(100,180,255,0) 60%);mix-blend-mode:screen;animation:snFlash .7s ease-out;z-index:60';
+  host && host.appendChild(flash); setTimeout(()=> flash.remove(), 750);
+  imgEl.style.animation='snPulse .9s ease-out 2'; setTimeout(()=> imgEl.style.animation='', 1800);
+  // Particules
+  const layer=document.createElement('div'); layer.className='sn-particles'; if(host) host.appendChild(layer);
+  for(let i=0;i<22;i++){ const p=document.createElement('div'); p.className='sn-particle'; const a=Math.random()*Math.PI*2; const r=50+Math.random()*80; p.style.left='50%'; p.style.top='50%'; p.style.transform=`translate(-50%,-50%) translate(${Math.cos(a)*r}px,${Math.sin(a)*r}px)`; p.style.opacity='0.9'; layer.appendChild(p);} setTimeout(()=> layer.remove(), 1000);
+  // Appliquer la forme Sashanobi
+  pokemon.__sashanobi = true;
+  pokemon.nom = 'Sashanobi';
+  pokemon.baseAtk = Math.round((pokemon.baseAtk||80)*1.35);
+  pokemon.baseDef = Math.round((pokemon.baseDef||60)*1.2);
+  imgEl.src = 'images/sashanobi.png';
+  if(isJoueur) nameGaucheSpan.textContent = pokemon.nom; else nameDroiteSpan.textContent = pokemon.nom;
+  // Attaques boostées au maximum raisonnable
+  pokemon.attaques = [
+    { nom:'Shuriken d\'Eau', puissance:65, type:'eau', precision:95, pp:15 },
+    { nom:'Hydrocanon', puissance:70, type:'eau', precision:80, pp:5 },
+    { nom:'Surf', puissance:55, type:'eau', precision:95, pp:15 },
+    { nom:'Affûtage', puissance:0, type:'statut', effet:'atk+', precision:100, pp:20 }
+  ];
+  configAttaques(cote, pokemon);
+  if(isJoueur){ ppState.gauche = pokemon.attaques.map(a=> a.pp||0); } else { ppState.droite = pokemon.attaques.map(a=> a.pp||0); }
+  majBadges(); updateDisplayedDamages(); attaquesGauche.forEach(div=> majLibelleAttaque(div));
+  enqueue('<strong>Amphinobi</strong> révèle sa <em>forme Sashanobi</em> !');
 }
 
 function appliquerMega(pokemon, cote){
@@ -1471,6 +1505,15 @@ if(gigamaxBtn){
     gigamaxUtilise = true;
     updateTransformationButtons();
     appliquerGigamax(joueur, 'gauche');
+  });
+}
+
+// Bouton Sashanobi
+if(sashanobiBtn){
+  sashanobiBtn.addEventListener('click', ()=>{
+    if(!joueur || joueur.nom!=='Amphinobi' || joueur.__sashanobi) return;
+    appliquerSashanobi(joueur, 'gauche');
+    updateTransformationButtons();
   });
 }
 
