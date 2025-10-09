@@ -60,6 +60,35 @@ const POKEMONS = {
       { nom: 'Onde Folie', puissance: 0, type: 'statut', effet: 'atk-', precision: 90, pp: 10 },
       { nom: 'Hypnose', puissance: 0, type: 'statut', effet: 'prec-', precision: 60, pp: 20 }
     ]
+  },
+  grenousse: {
+    nom: 'Grenousse', type: 'eau', image: 'images/grenousse.png', baseAtk: 45, baseDef: 35,
+    // Pas de méga-évolution pour Grenousse
+    attaques: [
+      { nom: 'Écume', puissance: 20, type: 'eau', precision: 100, pp: 30 },
+      { nom: 'Pistolet à O', puissance: 25, type: 'eau', precision: 100, pp: 30 },
+      { nom: 'Vive-Attaque', puissance: 30, type: 'normal', precision: 100, pp: 20 },
+      { nom: 'Concentration', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
+    ]
+  },
+  croaporal: {
+    nom: 'Croâporal', type: 'eau', image: 'images/croaporal.png', baseAtk: 60, baseDef: 45,
+    // Pas de méga pour Croâporal
+    attaques: [
+      { nom: 'Pistolet à O', puissance: 30, type: 'eau', precision: 100, pp: 30 },
+      { nom: 'Écume', puissance: 25, type: 'eau', precision: 100, pp: 30 },
+      { nom: 'Cascade', puissance: 45, type: 'eau', precision: 95, pp: 15 },
+      { nom: 'Danse Lames', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
+    ]
+  },
+  amphinobi: {
+    nom: 'Amphinobi', type: 'eau', image: 'images/amphinobi.png', baseAtk: 80, baseDef: 60,
+    attaques: [
+      { nom: 'Hydrocanon', puissance: 55, type: 'eau', precision: 75, pp: 5 },
+      { nom: 'Aqua-Jet', puissance: 35, type: 'eau', precision: 100, pp: 20 },
+      { nom: 'Cascade', puissance: 45, type: 'eau', precision: 95, pp: 15 },
+      { nom: 'Affûtage', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
+    ]
   }
 };
 
@@ -109,6 +138,20 @@ const shopInfo = document.getElementById('shop-info');
 const shopCurrencyAmount = document.getElementById('shop-currency-amount');
 // Conteneur liste sélection (pour ajouter les Pokémon capturés)
 const pokemonListContainer = document.querySelector('.pokemon-list');
+// Pokédex UI
+const pokedexBtn = document.getElementById('pokedex-btn');
+const pokedexOverlay = document.getElementById('pokedex-overlay');
+const closePokedexBtn = document.getElementById('close-pokedex-btn');
+const pokedexGrid = document.getElementById('pokedex-grid');
+// Detail panel elements
+const pokedexDetail = document.getElementById('pokedex-detail');
+const pokedexDetailName = document.getElementById('pokedex-detail-name');
+const pokedexDetailImage = document.getElementById('pokedex-detail-image');
+const pokedexDetailType = document.getElementById('pokedex-detail-type');
+const pokedexDetailAtk = document.getElementById('pokedex-detail-atk');
+const pokedexDetailDef = document.getElementById('pokedex-detail-def');
+const pokedexDetailAttacks = document.getElementById('pokedex-detail-attacks');
+const closePokedexDetailBtn = document.getElementById('close-pokedex-detail');
 
 const attaquesGauche = [...document.querySelectorAll('.attaque-gauche > div')];
 const attaquesDroite = [...document.querySelectorAll('.attaque-droite > div')];
@@ -131,6 +174,8 @@ let tour = 1;
 let phase = 'player'; // 'player' ou 'enemy'
 // Indicateur global de mode sélection PP (empêche lancement d'attaque)
 let ppSelectionActive = false;
+// Persistance simple de l'évolution Grenousse -> Croâporal pendant la session (peut être étendue au localStorage)
+let EVOLUTIONS = { grenousseToCroaporal: false, croaporalToAmphinobi: false };
 
 // Sons désactivés
 function playTone(){}
@@ -517,6 +562,8 @@ function attaque(sourceColonne, elementAttaque){
       }
     }
     majBadges();
+    // Recalculer les dégâts affichés car les stages ont changé
+    updateDisplayedDamages();
   enqueue(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> lance <em>${elementAttaque.dataset.originalname || 'une attaque'}</em>. ${texteEffet}`);
   } else {
     popupDegats(oppSide, degats, critique);
@@ -567,10 +614,12 @@ function addPokemonOption(key){
   `;
   div.addEventListener('click', ()=>{
     const keySel = key; // simple sélection (rollback logique USED_PLAYER)
-    joueur = POKEMONS[keySel];
+    joueur = JSON.parse(JSON.stringify(POKEMONS[keySel]));
+    joueur.__key = keySel;
     const enemiKey = selectionnerEnnemiSecurise(keySel);
   if(!enemiKey){ enqueue('<em>Aucun ennemi disponible.</em>'); joueur=null; return; }
-    ennemi = POKEMONS[enemiKey];
+    ennemi = JSON.parse(JSON.stringify(POKEMONS[enemiKey]));
+    ennemi.__key = enemiKey;
     imgGauche.src = joueur.image; imgDroite.src = ennemi.image;
     nameGaucheSpan.textContent = joueur.nom; nameDroiteSpan.textContent = ennemi.nom;
     throwPokeball(imgGauche); throwPokeball(imgDroite); setTimeout(()=> normaliserSprites(),700);
@@ -582,6 +631,7 @@ function addPokemonOption(key){
     if(menuBtn) menuBtn.classList.remove('hidden');
     if(bagBtn) bagBtn.classList.remove('hidden');
     if(shopBtn) shopBtn.classList.remove('hidden');
+    if(pokedexBtn) pokedexBtn.classList.remove('hidden');
     tour=1; phase='player'; majIndicateurTour(); verrouillerAttaques(false); updateTransformationButtons();
   });
   pokemonListContainer.appendChild(div);
@@ -591,10 +641,12 @@ pokemonOptions.forEach(opt=>{
   opt.addEventListener('click',()=>{
     const key = opt.dataset.key;
     // rollback: permettre la re-sélection libre
-    joueur = POKEMONS[key];
+    joueur = JSON.parse(JSON.stringify(POKEMONS[key]));
+    joueur.__key = key;
     const enemiKey = selectionnerEnnemiSecurise(key);
   if(!enemiKey){ enqueue('<em>Aucun ennemi disponible.</em>'); joueur=null; return; }
-    ennemi = POKEMONS[enemiKey];
+    ennemi = JSON.parse(JSON.stringify(POKEMONS[enemiKey]));
+    ennemi.__key = enemiKey;
 
     imgGauche.src = joueur.image;
     imgDroite.src = ennemi.image;
@@ -617,6 +669,7 @@ pokemonOptions.forEach(opt=>{
     if(menuBtn) menuBtn.classList.remove('hidden');
     if(bagBtn) bagBtn.classList.remove('hidden');
     if(shopBtn) shopBtn.classList.remove('hidden');
+  if(pokedexBtn) pokedexBtn.classList.remove('hidden');
     tour = 1; phase='player'; majIndicateurTour();
     verrouillerAttaques(false);
     // Gestion des boutons Méga-évolution et Gigamax
@@ -706,6 +759,7 @@ function resetCombat(){
   megaBtn.classList.add('hidden'); gigamaxBtn.classList.add('hidden'); restartBtn.classList.add('hidden');
   bagBtn && bagBtn.classList.add('hidden');
   shopBtn && shopBtn.classList.add('hidden');
+  pokedexBtn && pokedexBtn.classList.add('hidden');
   megaBtn.classList.remove('disabled'); gigamaxBtn.classList.remove('disabled');
   megaBtn.disabled = false; gigamaxBtn.disabled = false;
   // S'assurer que le sac est de nouveau activé après un combat précédent / capture
@@ -715,16 +769,33 @@ function resetCombat(){
   overlay.style.display='flex';
   // Réappliquer listeners sur les options de sélection
   setTimeout(()=>{
+    // Appliquer la persistance d'évolution Grenousse->Croâporal dans le menu de sélection
+    if(EVOLUTIONS.grenousseToCroaporal){
+      // Retirer Grenousse (s'il y est) et ajouter Croâporal
+      document.querySelectorAll('.pokemon-option[data-key="grenousse"]').forEach(n=> n.remove());
+      if(!document.querySelector('.pokemon-option[data-key="croaporal"]')){
+        addPokemonOption('croaporal');
+      }
+    }
+    // Appliquer la persistance Croâporal->Amphinobi
+    if(EVOLUTIONS.croaporalToAmphinobi){
+      document.querySelectorAll('.pokemon-option[data-key="croaporal"]').forEach(n=> n.remove());
+      if(!document.querySelector('.pokemon-option[data-key="amphinobi"]')){
+        addPokemonOption('amphinobi');
+      }
+    }
     document.querySelectorAll('.pokemon-option').forEach(opt=>{
       opt.style.pointerEvents = 'auto';
       opt.classList.remove('disabled');
       opt.onclick = null;
       opt.addEventListener('click',()=>{
         const key = opt.dataset.key;
-        joueur = POKEMONS[key];
+        joueur = JSON.parse(JSON.stringify(POKEMONS[key]));
+        joueur.__key = key;
   const enemiKey = selectionnerEnnemiSecurise(key);
         if(!enemiKey){ enqueue('<em>Aucun ennemi disponible (déjà possédés). Choisis un autre Pokémon.</em>'); joueur=null; return; }
-        ennemi = POKEMONS[enemiKey];
+        ennemi = JSON.parse(JSON.stringify(POKEMONS[enemiKey]));
+        ennemi.__key = enemiKey;
         imgGauche.src = joueur.image;
         imgDroite.src = ennemi.image;
         nameGaucheSpan.textContent = joueur.nom;
@@ -743,6 +814,7 @@ function resetCombat(){
         if(menuBtn) menuBtn.classList.remove('hidden');
         if(bagBtn) bagBtn.classList.remove('hidden');
         if(shopBtn) shopBtn.classList.remove('hidden');
+      if(pokedexBtn) pokedexBtn.classList.remove('hidden');
         tour = 1; phase='player'; majIndicateurTour();
         verrouillerAttaques(false);
         updateTransformationButtons();
@@ -781,11 +853,11 @@ let megaUtilisee = false;
 let gigamaxUtilise = false;
 // ================= Sac & Inventaire =================
 const INVENTAIRE = {
-  potion: { id:'potion', nom:'Potion', desc:'+20 PV (jusqu\'à 100)', qty:3, type:'heal', valeur:20 },
-  superPotion: { id:'superPotion', nom:'Super Potion', desc:'+40 PV', qty:2, type:'heal', valeur:40 },
   potionPP: { id:'potionPP', nom:'Potion PP', desc:'+5 PP à une attaque', qty:4, type:'pp', valeur:5 },
   elixir: { id:'elixir', nom:'Élixir', desc:'Restaure tous les PP d\'une attaque', qty:2, type:'ppfull' },
+  superPotion: { id:'superPotion', nom:'Super Potion', desc:'+40 PV', qty:2, type:'heal', valeur:40 },
   maxPotion: { id:'maxPotion', nom:'Max Potion', desc:'PV à 100%', qty:1, type:'healfull' },
+  superBonbon: { id:'superBonbon', nom:'Super Bonbon', desc:'Fait évoluer Grenousse en Croâporal (définitif)', qty:0, type:'evolve', cible:'grenousse->croaporal' },
   pokeball: { id:'pokeball', nom:'Poké Ball', desc:'Capture un Pokémon sauvage', qty:5, type:'capture' }
 };
 // Snapshot inventaire (placé après la déclaration pour éviter ReferenceError)
@@ -795,11 +867,11 @@ const __BASE_INVENTAIRE = JSON.parse(JSON.stringify(INVENTAIRE));
 let pokepieces = 0;
 
 const SHOP_ITEMS = {
-  potion: { id:'potion', nom:'Potion', desc:'+20 PV', prix:15 },
-  superPotion: { id:'superPotion', nom:'Super Potion', desc:'+40 PV', prix:25 },
   potionPP: { id:'potionPP', nom:'Potion PP', desc:'+5 PP à une attaque', prix:20 },
   elixir: { id:'elixir', nom:'Élixir', desc:'Restaure tous les PP d\'une attaque', prix:35 },
+  superPotion: { id:'superPotion', nom:'Super Potion', desc:'+40 PV', prix:25 },
   maxPotion: { id:'maxPotion', nom:'Max Potion', desc:'PV à 100%', prix:50 },
+  superBonbon: { id:'superBonbon', nom:'Super Bonbon', desc:'Évolue Grenousse en Croâporal (définitif)', prix:60 },
   pokeball: { id:'pokeball', nom:'Poké Ball', desc:'Capture un Pokémon sauvage', prix:30 }
 };
 
@@ -812,9 +884,10 @@ let currentCaptureEnemyKey = null; // clé de l'ennemi en cours de capture (séc
 window.__captureStatus = ()=>({ captured:[...CAPTURED], total:Object.keys(POKEMONS).length });
 
 function choisirEnnemi(keyExclu){
-  const keys = Object.keys(POKEMONS);
-  if(keys.length<=1) return keys.find(k=> k!==keyExclu) || null;
-  let pick; do { pick = keys[(Math.random()*keys.length)|0]; } while(pick===keyExclu);
+  const banned = new Set(['croaporal','amphinobi']); // Les évolutions joueur-only ne doivent jamais apparaître en ennemi
+  const candidates = Object.keys(POKEMONS).filter(k=> k!==keyExclu && !banned.has(k));
+  if(candidates.length===0) return null;
+  const pick = candidates[(Math.random()*candidates.length)|0];
   if(window.__debugCapture){ console.log('[DEBUG choisirEnnemi]', {keyExclu, pick}); }
   return pick;
 }
@@ -940,6 +1013,55 @@ function utiliserObjet(obj){
       ppSelectionActive = false;
     };
     return; // On ne consomme pas tant que pas cliqué
+  } else if(obj.type==='evolve'){
+    // Le Super Bonbon évolue UNIQUEMENT le Pokémon actif du joueur, d'un seul palier
+    if(!joueur){ bagInfo.textContent = 'Aucun Pokémon actif.'; return; }
+    let evoDone = false;
+    if(joueur.nom === 'Grenousse'){
+      // Grenousse -> Croâporal
+      EVOLUTIONS.grenousseToCroaporal = true;
+      document.querySelectorAll('.pokemon-option[data-key="grenousse"]').forEach(n=> n.remove());
+      if(!document.querySelector('.pokemon-option[data-key="croaporal"]')) addPokemonOption('croaporal');
+      const hpAvant = hpGauche;
+      joueur = JSON.parse(JSON.stringify(POKEMONS.croaporal));
+      joueur.__key = 'croaporal';
+      nameGaucheSpan.textContent = joueur.nom;
+      imgGauche.src = joueur.image;
+      imgGauche.classList.add('mega-flash'); setTimeout(()=> imgGauche.classList.remove('mega-flash'), 600);
+      configAttaques('gauche', joueur);
+      ppState.gauche = joueur.attaques.map(a=> a.pp || 0);
+      hpGauche = hpAvant; updateHPBars(); majBadges(); updateTransformationButtons(); updateDisplayedDamages();
+      CAPTURED.add('croaporal');
+      evoDone = true;
+      enqueue('<em>Ton Grenousse évolue en <strong>Croâporal</strong> grâce au Super Bonbon !</em>');
+    } else if(joueur.nom === 'Croâporal'){
+      // Croâporal -> Amphinobi
+      EVOLUTIONS.croaporalToAmphinobi = true;
+      document.querySelectorAll('.pokemon-option[data-key="croaporal"]').forEach(n=> n.remove());
+      if(!document.querySelector('.pokemon-option[data-key="amphinobi"]')) addPokemonOption('amphinobi');
+      const hpAvant = hpGauche;
+      joueur = JSON.parse(JSON.stringify(POKEMONS.amphinobi));
+      joueur.__key = 'amphinobi';
+      nameGaucheSpan.textContent = joueur.nom;
+      imgGauche.src = joueur.image;
+      imgGauche.classList.add('mega-flash'); setTimeout(()=> imgGauche.classList.remove('mega-flash'), 600);
+      configAttaques('gauche', joueur);
+      ppState.gauche = joueur.attaques.map(a=> a.pp || 0);
+      hpGauche = hpAvant; updateHPBars(); majBadges(); updateTransformationButtons(); updateDisplayedDamages();
+      CAPTURED.add('amphinobi');
+      evoDone = true;
+      enqueue('<em>Ton Croâporal évolue en <strong>Amphinobi</strong> grâce au Super Bonbon !</em>');
+    }
+    if(evoDone){
+      // Consommer l'objet uniquement si l'évolution a eu lieu
+      obj.qty -= 1;
+      try{ if(pokedexOverlay && pokedexOverlay.style.display==='flex') renderPokedex(); }catch(_e){}
+      renderInventaire();
+      bagInfo.textContent = 'Évolution effectuée.';
+    } else {
+      bagInfo.textContent = 'Aucune évolution applicable.';
+    }
+    return;
   } else if(obj.type==='capture'){
     // Tentative de capture
     if(!ennemi || hpDroite <= 0) {
@@ -1036,6 +1158,76 @@ shopBtn && shopBtn.addEventListener('click', ()=>{
 closeShopBtn && closeShopBtn.addEventListener('click', ()=> fermerShop());
 shopOverlay && shopOverlay.addEventListener('click', e=>{ if(e.target===shopOverlay) fermerShop(); });
 
+// ================= Pokédex =================
+function renderPokedex(){
+  if(!pokedexGrid) return;
+  pokedexGrid.innerHTML = '';
+  Object.entries(POKEMONS).forEach(([key, data])=>{
+    const card = document.createElement('div');
+    card.className = 'dex-entry' + (CAPTURED.has(key) ? '' : ' locked');
+    card.dataset.key = key;
+    const img = document.createElement('img'); img.src = data.image; img.alt = data.nom;
+    const name = document.createElement('div'); name.className='dex-name'; name.textContent = data.nom;
+    card.appendChild(img); card.appendChild(name);
+    pokedexGrid.appendChild(card);
+  });
+  // Attach click listeners for details
+  [...pokedexGrid.querySelectorAll('.dex-entry')].forEach(card=>{
+    card.addEventListener('click', ()=>{
+      const k = card.dataset.key;
+      // Only show details if captured
+      if(!CAPTURED.has(k)) return;
+      const data = POKEMONS[k];
+      pokedexDetailName.textContent = data.nom || '';
+      pokedexDetailImage.src = data.image || '';
+      // Type peut être string ou array
+      const t = Array.isArray(data.type) ? data.type : (data.types || [data.type]).filter(Boolean);
+      pokedexDetailType.textContent = (t && t.length) ? t.join(' / ') : (data.type || '-');
+      pokedexDetailAtk.textContent = (data.baseAtk!=null? data.baseAtk: '-')+'';
+      pokedexDetailDef.textContent = (data.baseDef!=null? data.baseDef: '-')+'';
+      pokedexDetailAttacks.innerHTML = '';
+      (data.attaques||[]).forEach(a=>{
+        const li=document.createElement('li');
+        const parts=[a.nom];
+        if(a.puissance!=null && a.puissance>0) parts.push(`Puiss. ${a.puissance}`);
+        if(a.precision!=null) parts.push(`Prec. ${a.precision}%`);
+        if(a.pp!=null) parts.push(`PP ${a.pp}`);
+        if(a.type) parts.push(`${a.type}`);
+        li.textContent = parts.join(' • ');
+        pokedexDetailAttacks.appendChild(li);
+      });
+      pokedexDetail.classList.remove('hidden');
+      pokedexDetail.setAttribute('aria-hidden','false');
+    });
+  });
+}
+function ouvrirPokedex(){ renderPokedex(); pokedexOverlay.style.display='flex'; }
+function fermerPokedex(){ pokedexOverlay.style.display='none'; }
+
+function fermerPokedexDetail(){
+  if(!pokedexDetail) return;
+  pokedexDetail.classList.add('hidden');
+  pokedexDetail.setAttribute('aria-hidden','true');
+}
+closePokedexDetailBtn && closePokedexDetailBtn.addEventListener('click', fermerPokedexDetail);
+
+// Fermer sur Échap: détail Pokédex > Pokédex > Shop > Sac (priorité du plus spécifique)
+document.addEventListener('keydown', (e)=>{
+  const key = e.key || e.code;
+  if(key === 'Escape' || key === 'Esc'){ 
+    if(pokedexDetail && !pokedexDetail.classList.contains('hidden')){ fermerPokedexDetail(); e.preventDefault(); return; }
+    if(pokedexOverlay && pokedexOverlay.style.display==='flex'){ fermerPokedex(); e.preventDefault(); return; }
+    if(shopOverlay && shopOverlay.style.display==='flex'){ fermerShop(); e.preventDefault(); return; }
+    if(bagOverlay && bagOverlay.style.display==='flex'){ fermerSac(); e.preventDefault(); return; }
+  }
+});
+
+pokedexBtn && pokedexBtn.addEventListener('click', ()=>{
+  if(pokedexOverlay.style.display==='flex') fermerPokedex(); else ouvrirPokedex();
+});
+closePokedexBtn && closePokedexBtn.addEventListener('click', ()=> fermerPokedex());
+pokedexOverlay && pokedexOverlay.addEventListener('click', e=>{ if(e.target===pokedexOverlay) fermerPokedex(); });
+
 // ================= Fonctions de capture =================
 function tentativeCapture(pokeball){
   if(!ennemi || hpDroite<=0 || combatTermine || captureEnCours) return;
@@ -1044,7 +1236,7 @@ function tentativeCapture(pokeball){
   menuBtn && (menuBtn.disabled = true);
   restartBtn && restartBtn.classList.add('hidden');
   // Mémoriser la clé de l'ennemi tout de suite pour ne pas la perdre en cas de reset prématuré
-  try { currentCaptureEnemyKey = Object.entries(POKEMONS).find(([k,v])=> v===ennemi)?.[0] || null; } catch(_e){ currentCaptureEnemyKey = null; }
+  try { currentCaptureEnemyKey = ennemi && ennemi.__key ? ennemi.__key : Object.entries(POKEMONS).find(([k,v])=> v===ennemi)?.[0] || null; } catch(_e){ currentCaptureEnemyKey = null; }
   const container = imgDroite.parentElement;
   if(container){ container.querySelectorAll('.capture-ball').forEach(b=> b.remove()); }
   const tauxBase = Math.max(10, 80 - hpDroite);
@@ -1081,6 +1273,8 @@ function animationCapture(reussite, pokeball){
           CAPTURED.add(currentCaptureEnemyKey);
           // Rendre le Pokémon capturé sélectionnable (s'il n'était pas dans la liste initiale)
           addPokemonOption(currentCaptureEnemyKey);
+    // Rafraîchir Pokédex si ouvert
+    try{ if(pokedexOverlay && pokedexOverlay.style.display==='flex') renderPokedex(); }catch(_e){}
         }
         // Vérifier si tous capturés -> reset automatique après message
         if(CAPTURED.size === Object.keys(POKEMONS).length){
@@ -1181,6 +1375,7 @@ function appliquerGigamax(pokemon, cote){
   pokemon.baseAtk = pokemon.gigamax.baseAtk;
   pokemon.baseDef = pokemon.gigamax.baseDef;
   imgEl.src = pokemon.gigamax.image;
+  if(pokemon.__key) pokemon.__key = pokemon.__key; // no-op, keep instance key
   if(isJoueur) nameGaucheSpan.textContent = pokemon.nom; else nameDroiteSpan.textContent = pokemon.nom;
   enqueue(`<strong>${pokemon.nom}</strong> prend une forme Gigamax !`);
   // Boost léger spécifique
@@ -1201,6 +1396,8 @@ function appliquerGigamax(pokemon, cote){
       ppState.droite = pokemon.attaques.map(a=> a.pp || 0);
     }
   }
+  // Recalcul immédiat des dégâts affichés pour refléter les nouveaux stats/formes
+  updateDisplayedDamages();
 }
 
 function appliquerMega(pokemon, cote){
@@ -1244,6 +1441,7 @@ function appliquerMega(pokemon, cote){
   pokemon.baseAtk = pokemon.mega.baseAtk;
   pokemon.baseDef = pokemon.mega.baseDef;
   imgEl.src = pokemon.mega.image;
+  if(pokemon.__key) pokemon.__key = pokemon.__key; // no-op, keep instance key
   if(isJoueur) nameGaucheSpan.textContent = pokemon.nom; else nameDroiteSpan.textContent = pokemon.nom;
   enqueue(`<strong>${pokemon.nom}</strong> méga-évolue ! Puissance accrue !`);
   // Boost léger de stages
@@ -1255,6 +1453,8 @@ function appliquerMega(pokemon, cote){
     stats.droite.defStage = Math.min(stats.droite.defStage+1,6);
   }
   majBadges();
+  // Recalcul immédiat des dégâts affichés pour refléter les nouveaux stats/formes
+  updateDisplayedDamages();
 }
 
 megaBtn.addEventListener('click', ()=>{
@@ -1367,6 +1567,9 @@ setTypes(POKEMONS.dragaufeu, ['feu']);
 setTypes(POKEMONS.pikachu, ['electrique']);
 setTypes(POKEMONS.mewtwo, ['psychique']);
 setTypes(POKEMONS.ectoplasma, ['spectre']);
+setTypes(POKEMONS.grenousse, ['eau']);
+setTypes(POKEMONS.croaporal, ['eau']);
+setTypes(POKEMONS.amphinobi, ['eau']);
 // Ajout types méga multiples
 POKEMONS.leviator.mega.types = ['eau','tenebres'];
 POKEMONS.dragaufeu.mega.types = ['feu','dragon'];

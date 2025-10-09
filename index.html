@@ -142,11 +142,47 @@
     </div>
   </div>
 
+  <!-- Overlay Pokédex -->
+  <div id="pokedex-overlay" class="overlay" style="display:none;">
+    <div class="pokedex-box">
+      <div class="pokedex-header">
+        <h2>Pokédex</h2>
+        <button id="close-pokedex-btn" class="close-pokedex" title="Fermer">×</button>
+      </div>
+      <p class="pokedex-hint">Tous les Pokémon possibles à attraper. Les non capturés sont grisés.</p>
+      <div id="pokedex-grid" class="pokedex-grid"></div>
+      <div id="pokedex-detail" class="pokedex-detail hidden" aria-hidden="true">
+        <div class="pokedex-detail-header">
+          <h3 id="pokedex-detail-name">&nbsp;</h3>
+          <button id="close-pokedex-detail" class="close-pokedex-detail" title="Fermer">×</button>
+        </div>
+        <div class="pokedex-detail-body">
+          <div class="pokedex-detail-left">
+            <img id="pokedex-detail-image" alt="Image Pokémon" />
+          </div>
+          <div class="pokedex-detail-right">
+            <div class="dex-meta-line"><span class="dex-meta-label">Type:</span> <span id="pokedex-detail-type">-</span></div>
+            <div class="dex-meta-line"><span class="dex-meta-label">Attaque:</span> <span id="pokedex-detail-atk">-</span></div>
+            <div class="dex-meta-line"><span class="dex-meta-label">Défense:</span> <span id="pokedex-detail-def">-</span></div>
+            <div class="dex-attacks">
+              <div class="dex-attacks-title">Attaques</div>
+              <ul id="pokedex-detail-attacks"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Boutons flottants en haut -->
   <div class="floating-buttons">
     <button id="shop-btn" class="floating-btn shop-btn hidden" title="Ouvrir le PokéShop">
       <span class="shop-icon">🛒</span>
       <span class="shop-text">Shop</span>
+    </button>
+    <button id="pokedex-btn" class="floating-btn pokedex-btn hidden" title="Ouvrir le Pokédex">
+      <span class="pokedex-icon">📘</span>
+      <span class="pokedex-text">Pokédex</span>
     </button>
     <button id="menu-btn" class="floating-btn menu-btn hidden" title="Retour au menu">Menu</button>
   </div>
