@@ -90,6 +90,64 @@ const POKEMONS = {
       { nom: 'Affûtage', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
     ]
   },
+  // Nouvelle chaîne d'évolution ennemie: Tarsal -> Kirlia -> Gallame (Méga possible)
+  tarsal: {
+    nom: 'Tarsal', type: 'psychique', image: 'images/tarsal.png', baseAtk: 35, baseDef: 30,
+    attaques: [
+      { nom: 'Choc Mental', puissance: 30, type: 'psychique', precision: 100, pp: 30 },
+      { nom: 'Vive-Attaque', puissance: 25, type: 'normal', precision: 100, pp: 20 },
+      { nom: 'Onde Folie', puissance: 0, type: 'statut', effet: 'atk-', precision: 90, pp: 10 },
+      { nom: 'Plénitude', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
+    ]
+  },
+  kirlia: {
+    nom: 'Kirlia', type: 'psychique', image: 'images/kirlia.png', baseAtk: 55, baseDef: 45,
+    attaques: [
+      { nom: 'Choc Mental', puissance: 35, type: 'psychique', precision: 100, pp: 30 },
+      { nom: 'Psyko', puissance: 50, type: 'psychique', precision: 90, pp: 10 },
+      { nom: 'Vive-Attaque', puissance: 30, type: 'normal', precision: 100, pp: 20 },
+      { nom: 'Plénitude', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
+    ]
+  },
+  gallame: {
+    nom: 'Gallame', type: 'psychique', image: 'images/gallame.png', baseAtk: 80, baseDef: 70,
+    mega: { nom: 'Méga-Gallame', type: 'psychique', image: 'images/mega gallame.png', baseAtk: 105, baseDef: 95 },
+    attaques: [
+      { nom: 'Psycho-Coupe', puissance: 50, type: 'psychique', precision: 95, pp: 15 },
+      { nom: 'Lame Sainte', puissance: 55, type: 'combat', precision: 100, pp: 10 },
+      { nom: 'Tranche', puissance: 45, type: 'normal', precision: 100, pp: 15 },
+      { nom: 'Danse Lames', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
+    ]
+  },
+  // Nouvelle chaîne d'évolution: Terhal -> Métang -> Métalosse (Méga possible)
+  terhal: {
+    nom: 'Terhal', type: 'acier', image: 'images/terhal.png', baseAtk: 40, baseDef: 55,
+    attaques: [
+      { nom: 'Charge', puissance: 20, type: 'normal', precision: 100, pp: 30 },
+      { nom: 'Griffe Acier', puissance: 30, type: 'acier', precision: 95, pp: 20 },
+      { nom: 'Tête de Fer', puissance: 40, type: 'acier', precision: 90, pp: 10 },
+      { nom: 'Poliroche', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
+    ]
+  },
+  metang: {
+    nom: 'Métang', type: 'acier', image: 'images/metang.png', baseAtk: 60, baseDef: 70,
+    attaques: [
+      { nom: 'Poing Météor', puissance: 45, type: 'acier', precision: 90, pp: 10 },
+      { nom: 'Psyko', puissance: 40, type: 'psychique', precision: 90, pp: 10 },
+      { nom: 'Griffe Acier', puissance: 35, type: 'acier', precision: 95, pp: 15 },
+      { nom: 'Affûtage', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 20 }
+    ]
+  },
+  metalosse: {
+    nom: 'Métalosse', type: 'acier', image: 'images/metalosse.png', baseAtk: 85, baseDef: 95,
+    mega: { nom: 'Méga-Métalosse', type: 'acier', image: 'images/mega metalosse.png', baseAtk: 110, baseDef: 120 },
+    attaques: [
+      { nom: 'Poing Météor', puissance: 55, type: 'acier', precision: 90, pp: 10 },
+      { nom: 'Psykoud’Boul', puissance: 50, type: 'psychique', precision: 95, pp: 15 },
+      { nom: 'Tête de Fer', puissance: 50, type: 'acier', precision: 90, pp: 10 },
+      { nom: 'Gravité', puissance: 0, type: 'statut', effet: 'atk+', precision: 100, pp: 15 }
+    ]
+  },
   // Secret post-Pokédex: Rayquaza (débloqué lorsque tous les autres sont capturés)
   rayquaza: {
     secret: true,
@@ -112,6 +170,8 @@ const TYPE_TABLE = {
   electrique: { eau: 2, plante: 0.5, electrique: 0.5 },
   psychique: { psychique: 0.5 },
   dragon: { dragon: 2, feu: 1, eau: 1, plante: 1, electrique: 1, normal: 1, psychique: 1 },
+  acier: {},
+  combat: { normal: 2, acier: 1.5, psychique: 0.5 },
   normal: {},
   statut: {}
 };
@@ -188,10 +248,12 @@ let processing = false;
 let combatTermine = false;
 let tour = 1;
 let phase = 'player'; // 'player' ou 'enemy'
+// Forcer Terhal comme premier ennemi disponible
+let FIRST_TERHAL_FORCED = true;
 // Indicateur global de mode sélection PP (empêche lancement d'attaque)
 let ppSelectionActive = false;
 // Persistance simple de l'évolution Grenousse -> Croâporal pendant la session (peut être étendue au localStorage)
-let EVOLUTIONS = { grenousseToCroaporal: false, croaporalToAmphinobi: false };
+let EVOLUTIONS = { grenousseToCroaporal: false, croaporalToAmphinobi: false, terhalToMetang: false, metangToMetalosse: false, tarsalToKirlia: false, kirliaToGallame: false };
 // Secrets (session uniquement)
 let SECRET = { rayquazaUnlocked: false, rayquazaCaptured: false };
 
@@ -401,15 +463,16 @@ function formaterLibelleAttaque(div){
   const ppRest = div.dataset.pprestant;
   let blocPP = '';
   if(ppTotal){ blocPP = `${ppRest}/${ppTotal}`; }
-  // Affichage fixe: toujours la puissance de l'attaque, sans contexte
-  const predTxt = !estStatus ? puissanceBrute.toString() : '—';
-  if(!estStatus){
-    div.dataset.predmindmg = puissanceBrute;
-    div.dataset.predmaxdmg = puissanceBrute;
-  } else {
+  let predMax = parseInt(div.dataset.predmaxdmg || '0', 10);
+  let predTxt;
+  if(estStatus){
     delete div.dataset.predmindmg; delete div.dataset.predmaxdmg;
+    predTxt = '—';
+  } else {
+    if(!predMax){ predMax = puissanceBrute; }
+    predTxt = `${predMax}`;
   }
-  return `\n    <div class="attk-wrapper">\n      <div class="attk-line">\n        <span class="attk-name">${nom}</span>\n      </div>\n      <div class="attk-meta">\n        <span class="attk-dmg" data-dmg="${estStatus? '-': div.dataset.predmaxdmg || puissanceBrute}">${predTxt} dmg</span>\n        <span class="attk-sep">•</span>\n        <span class="attk-pp">${blocPP? blocPP+' PP':'∞'}</span>\n      </div>\n    </div>\n  `;
+  return `\n    <div class="attk-wrapper">\n      <div class="attk-line">\n        <span class="attk-name">${nom}</span>\n      </div>\n      <div class="attk-meta">\n        <span class="attk-dmg" data-dmg="${estStatus? '-': predMax}">${predTxt} dmg</span>\n        <span class="attk-sep">•</span>\n        <span class="attk-pp">${blocPP? blocPP+' PP':'∞'}</span>\n      </div>\n    </div>\n  `;
 }
 
 function majLibelleAttaque(div){
@@ -430,12 +493,32 @@ function appliquerColorationDegats(div){
   else dmgSpan.classList.add('dmg-high');
 }
 
+function computePredictedFor(div, side){
+  if(!div || !div.dataset) return;
+  const puissance = parseInt(div.dataset.degat||'0',10);
+  const type = div.dataset.type || 'normal';
+  if(!(puissance>0)) { delete div.dataset.predmindmg; delete div.dataset.predmaxdmg; return; }
+  const attaquant = side==='gauche'? joueur : ennemi;
+  const defenseur = side==='gauche'? ennemi : joueur;
+  if(!attaquant || !defenseur){ div.dataset.predmindmg = puissance; div.dataset.predmaxdmg = puissance; return; }
+  const sideKey = side==='gauche'? 'gauche':'droite';
+  const oppKey = side==='gauche'? 'droite':'gauche';
+  const atkStat = (attaquant.baseAtk||50) * stageToMult(stats[sideKey].atkStage||0);
+  const defStat = (defenseur.baseDef||50) * stageToMult(stats[oppKey].defStage||0);
+  const base = (atkStat / defStat) * (puissance / 10) * 2.1;
+  const cibleType = defenseur.types || defenseur.type;
+  const mult = calculMultiplicateur(type, cibleType);
+  const fixedD = Math.max(1, Math.round(base * mult));
+  div.dataset.predmindmg = fixedD;
+  div.dataset.predmaxdmg = fixedD;
+}
+
 function updateDisplayedDamages(){
-  [...attaquesGauche, ...attaquesDroite].forEach(div=>{
-    if(div.dataset && div.dataset.degat){
-      div.innerHTML = formaterLibelleAttaque(div) || '';
-      appliquerColorationDegats(div);
-    }
+  attaquesGauche.forEach(div=>{
+    if(div.dataset && div.dataset.degat){ computePredictedFor(div, 'gauche'); div.innerHTML = formaterLibelleAttaque(div)||''; appliquerColorationDegats(div); }
+  });
+  attaquesDroite.forEach(div=>{
+    if(div.dataset && div.dataset.degat){ computePredictedFor(div, 'droite'); div.innerHTML = formaterLibelleAttaque(div)||''; appliquerColorationDegats(div); }
   });
 }
 function finDePartie(message){
@@ -514,19 +597,17 @@ function attaque(sourceColonne, elementAttaque){
   }
 
   const mult = calculMultiplicateur(type, cibleType);
-  let degats = 0; let critique = false; let base = 0; let atkStat=0; let defStat=0; let variance=1; let critMult=1;
+  let degats = 0; let base = 0; let atkStat=0; let defStat=0;
   if(puissance > 0){
     atkStat = attaquant.baseAtk * stageToMult(stats[side].atkStage);
     defStat = defenseur.baseDef * stageToMult(stats[oppSide].defStage);
   // Facteur global d'équilibrage des dégâts (augmenté de 1.8 à 2.1)
   base = (atkStat / defStat) * (puissance / 10) * 2.1;
-    variance = 0.85 + Math.random()*0.15;
-    critique = Math.random() < 0.0625; // 6.25%
-    critMult = critique ? 1.5 : 1;
-    degats = Math.max(1, Math.round(base * mult * variance * critMult));
+    // Dégâts fixes: pas de variance ni coups critiques
+    degats = Math.max(1, Math.round(base * mult));
   }
   if(window.__debugBattle){
-    console.log('[DEBUG calc]', {puissance, type, precisionBase, mult, atkStat, defStat, base: Number(base.toFixed? base.toFixed(3): base), variance: variance.toFixed? variance.toFixed(3): variance, critMult, degatsAvantApplication: degats});
+    console.log('[DEBUG calc]', {puissance, type, precisionBase, mult, atkStat, defStat, base: Number(base.toFixed? base.toFixed(3): base), degatsAvantApplication: degats});
   }
 
   if(puissance > 0){
@@ -566,9 +647,8 @@ function attaque(sourceColonne, elementAttaque){
     updateDisplayedDamages();
   enqueue(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> lance <em>${elementAttaque.dataset.originalname || 'une attaque'}</em>. ${texteEffet}`);
   } else {
-    popupDegats(oppSide, degats, critique);
-    let critTxt = critique ? ' <span class="super-efficace">Coup critique !</span>' : '';
-  enqueue(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> utilise <em>${elementAttaque.dataset.originalname || 'une attaque'}</em> inflige ${degats} dégâts. ${feedback}${critTxt}`);
+    popupDegats(oppSide, degats, false);
+  enqueue(`<span class="type type-${type}">${type}</span><strong>${attaquant.nom}</strong> utilise <em>${elementAttaque.dataset.originalname || 'une attaque'}</em> inflige ${degats} dégâts. ${feedback}`);
     if(elementAttaque.dataset.effet==='leech' && degats>0){
       const avant = side==='gauche'? hpGauche: hpDroite;
       const soin = Math.min(100 - avant, Math.max(1, Math.round(degats*0.5)));
@@ -624,6 +704,8 @@ function addPokemonOption(key){
     nameGaucheSpan.textContent = joueur.nom; nameDroiteSpan.textContent = ennemi.nom;
     throwPokeball(imgGauche); throwPokeball(imgDroite); setTimeout(()=> normaliserSprites(),700);
     configAttaques('gauche', joueur); configAttaques('droite', ennemi);
+  // Prédire les dégâts après configuration initiale
+  updateDisplayedDamages();
     ppState.gauche = joueur.attaques.map(a=> a.pp || 0); ppState.droite = ennemi.attaques.map(a=> a.pp || 0);
     overlay.style.display='none';
     enqueue(`<strong>Combat :</strong> ${joueur.nom} VS ${ennemi.nom}`);
@@ -659,6 +741,8 @@ pokemonOptions.forEach(opt=>{
 
     configAttaques('gauche', joueur);
     configAttaques('droite', ennemi);
+  // Prédire les dégâts après configuration initiale
+  updateDisplayedDamages();
     ppState.gauche = joueur.attaques.map(a=> a.pp || 0);
     ppState.droite = ennemi.attaques.map(a=> a.pp || 0);
 
@@ -784,6 +868,34 @@ function resetCombat(){
         addPokemonOption('amphinobi');
       }
     }
+    // Appliquer la persistance Terhal->Métang
+    if(EVOLUTIONS.terhalToMetang){
+      document.querySelectorAll('.pokemon-option[data-key="terhal"]').forEach(n=> n.remove());
+      if(!document.querySelector('.pokemon-option[data-key="metang"]')){
+        addPokemonOption('metang');
+      }
+    }
+    // Appliquer la persistance Métang->Métalosse
+    if(EVOLUTIONS.metangToMetalosse){
+      document.querySelectorAll('.pokemon-option[data-key="metang"]').forEach(n=> n.remove());
+      if(!document.querySelector('.pokemon-option[data-key="metalosse"]')){
+        addPokemonOption('metalosse');
+      }
+    }
+    // Appliquer la persistance Tarsal->Kirlia
+    if(EVOLUTIONS.tarsalToKirlia){
+      document.querySelectorAll('.pokemon-option[data-key="tarsal"]').forEach(n=> n.remove());
+      if(!document.querySelector('.pokemon-option[data-key="kirlia"]')){
+        addPokemonOption('kirlia');
+      }
+    }
+    // Appliquer la persistance Kirlia->Gallame
+    if(EVOLUTIONS.kirliaToGallame){
+      document.querySelectorAll('.pokemon-option[data-key="kirlia"]').forEach(n=> n.remove());
+      if(!document.querySelector('.pokemon-option[data-key="gallame"]')){
+        addPokemonOption('gallame');
+      }
+    }
     document.querySelectorAll('.pokemon-option').forEach(opt=>{
       opt.style.pointerEvents = 'auto';
       opt.classList.remove('disabled');
@@ -805,6 +917,8 @@ function resetCombat(){
   setTimeout(()=> normaliserSprites(), 700);
         configAttaques('gauche', joueur);
         configAttaques('droite', ennemi);
+  // Prédire les dégâts après configuration initiale
+  updateDisplayedDamages();
         ppState.gauche = joueur.attaques.map(a=> a.pp || 0);
         ppState.droite = ennemi.attaques.map(a=> a.pp || 0);
     overlay.style.display = 'none';
@@ -880,7 +994,15 @@ let currentCaptureEnemyKey = null; // clé de l'ennemi en cours de capture (séc
 window.__captureStatus = ()=>({ captured:[...CAPTURED], total:Object.keys(POKEMONS).length });
 
 function choisirEnnemi(keyExclu){
-  const banned = new Set(['croaporal','amphinobi']); // Les évolutions joueur-only ne doivent jamais apparaître en ennemi
+  const banned = new Set(['croaporal','amphinobi','metang','metalosse','kirlia','gallame']); // Évolutions joueur-only ne doivent jamais apparaître en ennemi
+  // Priorité: forcer Terhal comme premier ennemi dès le début (si possible)
+  if (FIRST_TERHAL_FORCED) {
+    if (POKEMONS.terhal && keyExclu !== 'terhal' && !banned.has('terhal') && !CAPTURED.has('terhal')) {
+      FIRST_TERHAL_FORCED = false;
+      if(window.__debugCapture){ console.log('[DEBUG choisirEnnemi] Forcing first enemy: terhal'); }
+      return 'terhal';
+    }
+  }
   const candidates = Object.keys(POKEMONS).filter(k=>{
     if(k===keyExclu) return false;
     if(banned.has(k)) return false;
@@ -1057,6 +1179,79 @@ function utiliserObjet(obj){
       CAPTURED.add('amphinobi');
       evoDone = true;
       enqueue('<em>Ton Croâporal évolue en <strong>Amphinobi</strong> grâce au Super Bonbon !</em>');
+  } else if(joueur.nom === 'Terhal'){
+      // Terhal -> Métang
+      EVOLUTIONS.terhalToMetang = true;
+      // Ajout sélection et Pokédex
+      document.querySelectorAll('.pokemon-option[data-key="terhal"]').forEach(n=> n.remove());
+      if(!document.querySelector('.pokemon-option[data-key="metang"]')) addPokemonOption('metang');
+      const hpAvant = hpGauche;
+      joueur = JSON.parse(JSON.stringify(POKEMONS.metang));
+      joueur.__key = 'metang';
+      nameGaucheSpan.textContent = joueur.nom;
+      imgGauche.src = joueur.image;
+      imgGauche.classList.add('mega-flash'); setTimeout(()=> imgGauche.classList.remove('mega-flash'), 600);
+      configAttaques('gauche', joueur);
+      ppState.gauche = joueur.attaques.map(a=> a.pp || 0);
+      hpGauche = hpAvant; updateHPBars(); majBadges(); updateTransformationButtons(); updateDisplayedDamages();
+      attaquesGauche.forEach(div=> majLibelleAttaque(div));
+      CAPTURED.add('metang');
+      evoDone = true;
+      enqueue('<em>Ton Terhal évolue en <strong>Métang</strong> grâce au Super Bonbon !</em>');
+  } else if(joueur.nom === 'Métang'){
+      // Métang -> Métalosse
+      EVOLUTIONS.metangToMetalosse = true;
+      document.querySelectorAll('.pokemon-option[data-key="metang"]').forEach(n=> n.remove());
+      if(!document.querySelector('.pokemon-option[data-key="metalosse"]')) addPokemonOption('metalosse');
+      const hpAvant = hpGauche;
+      joueur = JSON.parse(JSON.stringify(POKEMONS.metalosse));
+      joueur.__key = 'metalosse';
+      nameGaucheSpan.textContent = joueur.nom;
+      imgGauche.src = joueur.image;
+      imgGauche.classList.add('mega-flash'); setTimeout(()=> imgGauche.classList.remove('mega-flash'), 600);
+      configAttaques('gauche', joueur);
+      ppState.gauche = joueur.attaques.map(a=> a.pp || 0);
+      hpGauche = hpAvant; updateHPBars(); majBadges(); updateTransformationButtons(); updateDisplayedDamages();
+      attaquesGauche.forEach(div=> majLibelleAttaque(div));
+      CAPTURED.add('metalosse');
+      evoDone = true;
+      enqueue('<em>Ton Métang évolue en <strong>Métalosse</strong> grâce au Super Bonbon !</em>');
+    } else if(joueur.nom === 'Tarsal'){
+      // Tarsal -> Kirlia
+      EVOLUTIONS.tarsalToKirlia = true;
+      document.querySelectorAll('.pokemon-option[data-key="tarsal"]').forEach(n=> n.remove());
+      if(!document.querySelector('.pokemon-option[data-key="kirlia"]')) addPokemonOption('kirlia');
+      const hpAvant = hpGauche;
+      joueur = JSON.parse(JSON.stringify(POKEMONS.kirlia));
+      joueur.__key = 'kirlia';
+      nameGaucheSpan.textContent = joueur.nom;
+      imgGauche.src = joueur.image;
+      imgGauche.classList.add('mega-flash'); setTimeout(()=> imgGauche.classList.remove('mega-flash'), 600);
+      configAttaques('gauche', joueur);
+      ppState.gauche = joueur.attaques.map(a=> a.pp || 0);
+      hpGauche = hpAvant; updateHPBars(); majBadges(); updateTransformationButtons(); updateDisplayedDamages();
+      attaquesGauche.forEach(div=> majLibelleAttaque(div));
+      CAPTURED.add('kirlia');
+      evoDone = true;
+      enqueue('<em>Ton Tarsal évolue en <strong>Kirlia</strong> grâce au Super Bonbon !</em>');
+    } else if(joueur.nom === 'Kirlia'){
+      // Kirlia -> Gallame
+      EVOLUTIONS.kirliaToGallame = true;
+      document.querySelectorAll('.pokemon-option[data-key="kirlia"]').forEach(n=> n.remove());
+      if(!document.querySelector('.pokemon-option[data-key="gallame"]')) addPokemonOption('gallame');
+      const hpAvant = hpGauche;
+      joueur = JSON.parse(JSON.stringify(POKEMONS.gallame));
+      joueur.__key = 'gallame';
+      nameGaucheSpan.textContent = joueur.nom;
+      imgGauche.src = joueur.image;
+      imgGauche.classList.add('mega-flash'); setTimeout(()=> imgGauche.classList.remove('mega-flash'), 600);
+      configAttaques('gauche', joueur);
+      ppState.gauche = joueur.attaques.map(a=> a.pp || 0);
+      hpGauche = hpAvant; updateHPBars(); majBadges(); updateTransformationButtons(); updateDisplayedDamages();
+      attaquesGauche.forEach(div=> majLibelleAttaque(div));
+      CAPTURED.add('gallame');
+      evoDone = true;
+      enqueue('<em>Ton Kirlia évolue en <strong>Gallame</strong> grâce au Super Bonbon !</em>');
     }
     if(evoDone){
       // Consommer l'objet uniquement si l'évolution a eu lieu
@@ -1633,6 +1828,8 @@ function decisionEnnemi() {
 // Observer le log queue pour appliquer patch dynamique après chaque action
 function baseAfterAction(){
   updateTransformationButtons();
+  // Recalcule les dégâts affichés après chaque action (stages, formes, etc.)
+  try { updateDisplayedDamages(); } catch(_e) {}
 }
 
 // (Hook processQueue supprimé : afterAction est maintenant appelé directement dans processQueue)
@@ -1662,6 +1859,13 @@ setTypes(POKEMONS.ectoplasma, ['spectre']);
 setTypes(POKEMONS.grenousse, ['eau']);
 setTypes(POKEMONS.croaporal, ['eau']);
 setTypes(POKEMONS.amphinobi, ['eau']);
+  if(POKEMONS.terhal){ setTypes(POKEMONS.terhal, ['acier']); }
+  if(POKEMONS.metang){ setTypes(POKEMONS.metang, ['acier','psychique']); }
+  if(POKEMONS.metalosse){ setTypes(POKEMONS.metalosse, ['acier','psychique']); if(POKEMONS.metalosse.mega){ POKEMONS.metalosse.mega.types = ['acier','psychique']; } }
+// Tarsal chain
+if(POKEMONS.tarsal){ setTypes(POKEMONS.tarsal, ['psychique']); }
+if(POKEMONS.kirlia){ setTypes(POKEMONS.kirlia, ['psychique']); }
+if(POKEMONS.gallame){ setTypes(POKEMONS.gallame, ['psychique','combat']); if(POKEMONS.gallame.mega){ POKEMONS.gallame.mega.types = ['psychique','combat']; } }
 // Rayquaza (secret)
 if(POKEMONS.rayquaza){ setTypes(POKEMONS.rayquaza, ['dragon']); if(POKEMONS.rayquaza.mega){ POKEMONS.rayquaza.mega.types = ['dragon']; } }
 // Ajout types méga multiples
@@ -1672,6 +1876,18 @@ if(POKEMONS.ectoplasma.mega){ POKEMONS.ectoplasma.mega.types = ['spectre','psych
 
 // Attaques post-méga (remplacement)
 const MEGA_NEW_ATTACKS = {
+    'Méga-Métalosse': [
+      { nom:'Poing Météor', puissance:60, type:'acier', precision:90, pp:10 },
+      { nom:'Zen Headbutt', puissance:55, type:'psychique', precision:90, pp:10 },
+      { nom:'Tête de Fer', puissance:55, type:'acier', precision:90, pp:10 },
+      { nom:'Poliroche', puissance:0, type:'statut', effet:'atk+', precision:100, pp:20 }
+    ],
+  'Méga-Gallame': [
+    { nom:'Psycho-Coupe', puissance:60, type:'psychique', precision:95, pp:15 },
+    { nom:'Close Combat', puissance:65, type:'combat', precision:90, pp:5 },
+    { nom:'Lame Sainte', puissance:60, type:'combat', precision:100, pp:10 },
+    { nom:'Danse Lames', puissance:0, type:'statut', effet:'atk+', precision:100, pp:20 }
+  ],
   'Méga-Léviator': [
     { nom:'Cascade', puissance:45, type:'eau', precision:95, pp:15 },
     { nom:'Hydrocanon', puissance:55, type:'eau', precision:75, pp:5 },
